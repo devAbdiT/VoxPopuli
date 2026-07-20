@@ -11,9 +11,9 @@ const App: React.FC = () => {
   return (
     <ThemeProvider>
       <Router>
-        <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+        <div className="min-h-screen flex flex-col bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-50 via-gray-50 to-white dark:from-indigo-900/20 dark:via-gray-900 dark:to-gray-900 transition-colors duration-500">
           {/* Navigation */}
-          <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 transition-colors duration-200">
+          <nav className="backdrop-blur-md bg-white/70 dark:bg-gray-900/70 border-b border-gray-200/50 dark:border-gray-800/50 sticky top-0 z-50 transition-colors duration-500">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex justify-between h-16">
                 <div className="flex items-center">
@@ -21,7 +21,7 @@ const App: React.FC = () => {
                     <div className="bg-primary text-white p-2 rounded-lg mr-3 group-hover:rotate-3 transition-transform">
                        <Activity className="w-6 h-6" />
                     </div>
-                    <span className="font-bold text-xl text-gray-900 dark:text-white tracking-tight">Vox<span className="text-primary">Populi</span></span>
+                    <span className="font-display font-bold text-2xl text-gray-900 dark:text-white tracking-tight">Vox<span className="text-primary">Populi</span></span>
                   </Link>
                 </div>
                 <div className="flex items-center">
@@ -50,7 +50,7 @@ const App: React.FC = () => {
         </main>
 
         {/* Footer */}
-        <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto transition-colors duration-200">
+        <footer className="backdrop-blur-md bg-white/70 dark:bg-gray-800/70 border-t border-gray-200/50 dark:border-gray-700/50 mt-auto transition-colors duration-500">
           <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             <p className="text-center text-sm text-gray-400 dark:text-gray-500">
               &copy; 2024 VoxPopuli. Powered by React, Redux & Gemini.

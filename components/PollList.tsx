@@ -4,6 +4,20 @@ import { RootState } from '../store';
 import { Link } from 'react-router-dom';
 import { Poll, PollCategory } from '../types';
 import { BarChart2, Clock, Users, ChevronRight } from 'lucide-react';
+import { motion } from 'motion/react';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+};
 
 const PollList: React.FC = () => {
   const polls = useSelector((state: RootState) => state.polls);
@@ -19,7 +33,7 @@ const PollList: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white transition-colors duration-200">Active Polls</h2>
+        <h2 className="text-3xl font-display font-bold text-gray-800 dark:text-white transition-colors duration-200">Active Polls</h2>
         
         <div className="flex space-x-2 overflow-x-auto pb-2 w-full sm:w-auto">
           {categories.map(cat => (
@@ -44,14 +58,19 @@ const PollList: React.FC = () => {
           <p className="text-gray-500 dark:text-gray-400 text-lg">No polls found in this category.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
           {filteredPolls.map((poll) => (
-            <Link 
-              key={poll.id} 
-              to={`/poll/${poll.id}`}
-              className="group bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all border border-gray-100 dark:border-gray-700 flex flex-col h-full"
-            >
-              <div className="flex justify-between items-start mb-4">
+            <motion.div key={poll.id} variants={itemVariants} className="h-full">
+              <Link 
+                to={`/poll/${poll.id}`}
+                className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 dark:border-gray-700/50 hover:border-primary/50 dark:hover:border-primary/50 flex flex-col h-full"
+              >
+                <div className="flex justify-between items-start mb-4">
                 <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-semibold rounded-full uppercase tracking-wider">
                   {poll.category || 'General'}
                 </span>
@@ -63,7 +82,7 @@ const PollList: React.FC = () => {
                 )}
               </div>
               
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-primary dark:group-hover:text-primary transition-colors line-clamp-2">
+              <h3 className="text-xl font-display font-bold text-gray-900 dark:text-white mb-2 group-hover:text-primary dark:group-hover:text-primary transition-colors line-clamp-2">
                 {poll.question}
               </h3>
               
@@ -85,8 +104,9 @@ const PollList: React.FC = () => {
                 <ChevronRight className="w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:text-primary dark:group-hover:text-primary group-hover:translate-x-1 transition-all" />
               </div>
             </Link>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
     </div>
   );

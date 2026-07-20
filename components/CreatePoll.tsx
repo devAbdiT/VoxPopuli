@@ -97,9 +97,9 @@ const CreatePoll: React.FC = () => {
         Back to Dashboard
       </button>
 
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-200">
-        <div className="mb-8 border-b border-gray-100 dark:border-gray-700 pb-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Create New Poll</h2>
+      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-8 transition-colors duration-200">
+        <div className="mb-8 border-b border-gray-100 dark:border-gray-700/50 pb-6">
+          <h2 className="text-3xl font-display font-bold text-gray-900 dark:text-white mb-2">Create New Poll</h2>
           <p className="text-gray-500 dark:text-gray-400">Design your poll manually or use AI to spark ideas.</p>
         </div>
 

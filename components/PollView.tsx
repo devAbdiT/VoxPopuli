@@ -4,8 +4,26 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, votePoll, deletePoll } from '../store';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { ArrowLeft, CheckCircle, Trash2, Share2, Info } from 'lucide-react';
+import { motion } from 'motion/react';
 
 const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+const CustomBar = (props: any) => {
+  const { fill, x, y, width, height } = props;
+  
+  return (
+    <motion.rect
+      x={x}
+      y={y}
+      height={height}
+      fill={fill}
+      initial={{ width: 0 }}
+      animate={{ width: width > 0 ? width : 0 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      rx={4}
+    />
+  );
+};
 
 const PollView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -79,12 +97,12 @@ const PollView: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Column: Voting Area */}
         <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-200">
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-8 transition-colors duration-200">
             <div className="mb-6">
-               <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-semibold rounded-full uppercase tracking-wider mb-3 inline-block">
+               <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-semibold rounded-full uppercase tracking-wider mb-3 inline-block shadow-sm">
                   {poll.category || 'General'}
                 </span>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white leading-tight mb-3 transition-colors duration-200">
+                <h1 className="text-4xl font-display font-bold text-gray-900 dark:text-white leading-tight mb-3 transition-colors duration-200">
                   {poll.question}
                 </h1>
                 <p className="text-gray-500 dark:text-gray-400 text-lg leading-relaxed transition-colors duration-200">
@@ -161,8 +179,8 @@ const PollView: React.FC = () => {
 
         {/* Right Column: Visualization */}
         <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 h-full flex flex-col transition-colors duration-200">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center transition-colors duration-200">
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-8 h-full flex flex-col transition-colors duration-200">
+            <h3 className="text-2xl font-display font-bold text-gray-900 dark:text-white mb-6 flex items-center transition-colors duration-200">
                Live Results
                {totalVotes === 0 && <span className="ml-2 text-sm font-normal text-gray-400 dark:text-gray-500">(No votes yet)</span>}
             </h3>
@@ -185,7 +203,7 @@ const PollView: React.FC = () => {
                         tickLine={false}
                      />
                      <Tooltip content={<CustomTooltip />} cursor={{fill: '#f3f4f6', radius: 8}} />
-                     <Bar dataKey="votes" radius={[0, 4, 4, 0]} barSize={32}>
+                     <Bar dataKey="votes" shape={<CustomBar />} barSize={32}>
                         {chartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}

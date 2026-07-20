@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { addPoll } from '../store';
+import { createPollEvent } from '../store';
 import { generatePollContent } from '../services/geminiService';
 import { PollCategory } from '../types';
 import { Sparkles, Plus, Trash2, Loader2, Save, ArrowLeft } from 'lucide-react';
@@ -83,7 +83,7 @@ const CreatePoll: React.FC = () => {
       }))
     };
 
-    dispatch(addPoll(newPoll));
+    createPollEvent(newPoll);
     navigate('/');
   };
 

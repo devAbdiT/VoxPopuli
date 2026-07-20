@@ -22,6 +22,7 @@ const itemVariants = {
 const PollList: React.FC = () => {
   const polls = useSelector((state: RootState) => state.polls);
   const userVotes = useSelector((state: RootState) => state.userVotes);
+  const loading = useSelector((state: RootState) => state.loading);
   const [filter, setFilter] = useState<string>('All');
 
   const categories = ['All', ...Object.values(PollCategory)];
@@ -29,6 +30,14 @@ const PollList: React.FC = () => {
   const filteredPolls = filter === 'All' 
     ? polls 
     : polls.filter(p => p.category === filter);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

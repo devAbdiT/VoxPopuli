@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState, votePoll, deletePoll } from '../store';
+import { RootState, votePollEvent, deletePollEvent } from '../store';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { ArrowLeft, CheckCircle, Trash2, Share2, Info } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -32,6 +32,15 @@ const PollView: React.FC = () => {
 
   const poll = useSelector((state: RootState) => state.polls.find(p => p.id === id));
   const userVote = useSelector((state: RootState) => state.userVotes[id || '']);
+  const loading = useSelector((state: RootState) => state.loading);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!poll) {
     return (
@@ -44,12 +53,12 @@ const PollView: React.FC = () => {
 
   const handleVote = (optionId: string) => {
     if (userVote) return;
-    dispatch(votePoll({ pollId: poll.id, optionId }));
+    votePollEvent(poll.id, optionId);
   };
   
   const handleDelete = () => {
       if(confirm('Are you sure you want to delete this poll?')) {
-          dispatch(deletePoll(poll.id));
+          deletePollEvent(poll.id);
           navigate('/');
       }
   }

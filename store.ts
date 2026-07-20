@@ -1,91 +1,63 @@
-import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Poll, AppState, PollOption } from './types';
+import { configureStore, createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
+import { io } from 'socket.io-client';
+import { Poll, AppState } from './types';
 
-// --- Local Storage Helpers ---
-const loadState = (): AppState | undefined => {
-  try {
-    const serializedState = localStorage.getItem('voxpopuli_state');
-    if (serializedState === null) {
-      return undefined;
-    }
-    return JSON.parse(serializedState);
-  } catch (err) {
-    return undefined;
-  }
-};
+// Setup Socket.IO client
+export const socket = io(window.location.origin);
 
-const saveState = (state: AppState) => {
-  try {
-    const serializedState = JSON.stringify(state);
-    localStorage.setItem('voxpopuli_state', serializedState);
-  } catch {
-    // ignore write errors
-  }
-};
-
-// --- Initial Data ---
-const initialPolls: Poll[] = [
-  {
-    id: '1',
-    question: 'What is your favorite frontend framework?',
-    description: 'Help us decide which framework rules the web in 2024.',
-    createdAt: Date.now(),
-    totalVotes: 150,
-    category: 'Technology',
-    options: [
-      { id: 'opt_1', text: 'React', votes: 85 },
-      { id: 'opt_2', text: 'Vue', votes: 30 },
-      { id: 'opt_3', text: 'Angular', votes: 20 },
-      { id: 'opt_4', text: 'Svelte', votes: 15 },
-    ]
-  },
-  {
-    id: '2',
-    question: 'Coffee or Tea?',
-    description: 'The ultimate morning beverage showdown.',
-    createdAt: Date.now() - 100000,
-    totalVotes: 82,
-    category: 'Lifestyle',
-    options: [
-      { id: 'opt_c', text: 'Coffee', votes: 50 },
-      { id: 'opt_t', text: 'Tea', votes: 32 },
-    ]
-  }
-];
-
-const initialState: AppState = loadState() || {
-  polls: initialPolls,
-  userVotes: {},
-  loading: false,
+const initialState: AppState = {
+  polls: [],
+  userVotes: {}, // We keep userVotes in local storage and redux state so they persist
+  loading: true,
   error: null,
 };
+
+// Local storage for user votes to prevent double voting after refresh
+const loadUserVotes = () => {
+  try {
+    const saved = localStorage.getItem('voxpopuli_user_votes');
+    return saved ? JSON.parse(saved) : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveUserVotes = (votes: Record<string, string>) => {
+  try {
+    localStorage.setItem('voxpopuli_user_votes', JSON.stringify(votes));
+  } catch {}
+};
+
+initialState.userVotes = loadUserVotes();
 
 // --- Slices ---
 const pollsSlice = createSlice({
   name: 'polls',
   initialState,
   reducers: {
-    addPoll: (state, action: PayloadAction<Poll>) => {
-      state.polls.unshift(action.payload);
+    setInitialState: (state, action: PayloadAction<Poll[]>) => {
+      state.polls = action.payload;
+      state.loading = false;
     },
-    votePoll: (state, action: PayloadAction<{ pollId: string; optionId: string }>) => {
-      const { pollId, optionId } = action.payload;
-      
-      // Prevent double voting logic is handled in UI, but safe guard here
-      if (state.userVotes[pollId]) {
-         // If we wanted to allow changing votes, we'd decrement old one here
-         return; 
+    pollCreated: (state, action: PayloadAction<Poll>) => {
+      // Check if poll already exists to prevent duplicates
+      if (!state.polls.find(p => p.id === action.payload.id)) {
+        state.polls.unshift(action.payload);
       }
-
-      const poll = state.polls.find(p => p.id === pollId);
-      if (poll) {
-        const option = poll.options.find(o => o.id === optionId);
-        if (option) {
-          option.votes += 1;
-          poll.totalVotes += 1;
-          state.userVotes[pollId] = optionId;
-        }
+    },
+    pollVoted: (state, action: PayloadAction<{ pollId: string; optionId: string; poll: Poll }>) => {
+      const { pollId, poll } = action.payload;
+      const index = state.polls.findIndex(p => p.id === pollId);
+      if (index !== -1) {
+        state.polls[index] = poll;
       }
+    },
+    pollDeleted: (state, action: PayloadAction<string>) => {
+      state.polls = state.polls.filter(p => p.id !== action.payload);
+    },
+    recordUserVote: (state, action: PayloadAction<{ pollId: string; optionId: string }>) => {
+      state.userVotes[action.payload.pollId] = action.payload.optionId;
+      saveUserVotes(state.userVotes);
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
@@ -93,23 +65,46 @@ const pollsSlice = createSlice({
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
-    deletePoll: (state, action: PayloadAction<string>) => {
-        state.polls = state.polls.filter(p => p.id !== action.payload);
-        delete state.userVotes[action.payload];
-    }
   },
 });
 
-export const { addPoll, votePoll, setLoading, setError, deletePoll } = pollsSlice.actions;
+export const { setInitialState, pollCreated, pollVoted, pollDeleted, recordUserVote, setLoading, setError } = pollsSlice.actions;
 
 export const store = configureStore({
   reducer: pollsSlice.reducer,
 });
 
-// Subscribe to store updates to persist state
-store.subscribe(() => {
-  saveState(store.getState());
+// Set up Socket listeners
+socket.on('initial_state', (polls: Poll[]) => {
+  store.dispatch(setInitialState(polls));
 });
+
+socket.on('poll_created', (poll: Poll) => {
+  store.dispatch(pollCreated(poll));
+});
+
+socket.on('poll_voted', (data: { pollId: string; optionId: string; poll: Poll }) => {
+  store.dispatch(pollVoted(data));
+});
+
+socket.on('poll_deleted', (pollId: string) => {
+  store.dispatch(pollDeleted(pollId));
+});
+
+// Thunk-like helpers for emitting via socket
+export const createPollEvent = (poll: Poll) => {
+  socket.emit('create_poll', poll);
+};
+
+export const votePollEvent = (pollId: string, optionId: string) => {
+  // First record it locally so UI updates instantly and prevents multiple clicks
+  store.dispatch(recordUserVote({ pollId, optionId }));
+  socket.emit('vote_poll', { pollId, optionId });
+};
+
+export const deletePollEvent = (pollId: string) => {
+  socket.emit('delete_poll', pollId);
+};
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

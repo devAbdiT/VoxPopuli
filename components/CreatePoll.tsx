@@ -91,23 +91,23 @@ const CreatePoll: React.FC = () => {
     <div className="max-w-2xl mx-auto">
       <button 
         onClick={() => navigate('/')}
-        className="flex items-center text-gray-500 hover:text-gray-800 mb-6 transition-colors"
+        className="flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white mb-6 transition-colors"
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back to Dashboard
       </button>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-        <div className="mb-8 border-b border-gray-100 pb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Create New Poll</h2>
-          <p className="text-gray-500">Design your poll manually or use AI to spark ideas.</p>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-200">
+        <div className="mb-8 border-b border-gray-100 dark:border-gray-700 pb-6">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Create New Poll</h2>
+          <p className="text-gray-500 dark:text-gray-400">Design your poll manually or use AI to spark ideas.</p>
         </div>
 
         {/* AI Section */}
-        <div className="bg-indigo-50 rounded-xl p-6 mb-8 border border-indigo-100">
+        <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-6 mb-8 border border-indigo-100 dark:border-indigo-800/30 transition-colors duration-200">
           <div className="flex flex-col md:flex-row gap-4 items-end">
             <div className="flex-grow w-full">
-              <label className="block text-sm font-semibold text-indigo-900 mb-2">
+              <label className="block text-sm font-semibold text-indigo-900 dark:text-indigo-300 mb-2">
                 Generate with AI
               </label>
               <div className="relative">
@@ -116,7 +116,7 @@ const CreatePoll: React.FC = () => {
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
                     placeholder="e.g., Future of Remote Work"
-                    className="w-full pl-4 pr-4 py-3 bg-white border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                    className="w-full pl-4 pr-4 py-3 bg-white dark:bg-gray-700 border border-indigo-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white dark:placeholder-gray-400 transition-all"
                 />
                 <Sparkles className="absolute right-3 top-3.5 w-5 h-5 text-indigo-400" />
               </div>
@@ -147,7 +147,7 @@ const CreatePoll: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Question */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Poll Question <span className="text-red-500">*</span>
             </label>
             <input
@@ -155,14 +155,14 @@ const CreatePoll: React.FC = () => {
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="What would you like to ask?"
-              className={`w-full px-4 py-3 rounded-lg border ${errors.question ? 'border-red-300 focus:ring-red-200' : 'border-gray-300 focus:ring-primary/20'} focus:border-primary focus:outline-none transition-all`}
+              className={`w-full px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border ${errors.question ? 'border-red-300 focus:ring-red-200' : 'border-gray-300 dark:border-gray-600 focus:ring-primary/20'} focus:border-primary dark:focus:border-primary focus:outline-none transition-all`}
             />
             {errors.question && <p className="text-red-500 text-xs mt-1">{errors.question}</p>}
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Description (Optional)
             </label>
             <textarea
@@ -170,19 +170,19 @@ const CreatePoll: React.FC = () => {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add some context..."
               rows={3}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none transition-all resize-none"
+              className="w-full px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none transition-all resize-none"
             />
           </div>
 
           {/* Category */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Category
             </label>
             <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none bg-white"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none"
             >
                 {Object.values(PollCategory).map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
@@ -192,7 +192,7 @@ const CreatePoll: React.FC = () => {
 
           {/* Options */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Options <span className="text-red-500">*</span>
             </label>
             <div className="space-y-3">
@@ -203,13 +203,13 @@ const CreatePoll: React.FC = () => {
                     value={option}
                     onChange={(e) => handleOptionChange(index, e.target.value)}
                     placeholder={`Option ${index + 1}`}
-                    className="flex-grow px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none transition-all"
+                    className="flex-grow px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none transition-all"
                   />
                   {options.length > 2 && (
                     <button
                       type="button"
                       onClick={() => handleRemoveOption(index)}
-                      className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-3 text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>

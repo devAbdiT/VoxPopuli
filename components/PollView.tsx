@@ -18,7 +18,7 @@ const PollView: React.FC = () => {
   if (!poll) {
     return (
       <div className="text-center py-20">
-        <h2 className="text-2xl font-bold text-gray-800">Poll not found</h2>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white transition-colors duration-200">Poll not found</h2>
         <button onClick={() => navigate('/')} className="mt-4 text-primary underline">Go Home</button>
       </div>
     );
@@ -50,8 +50,8 @@ const PollView: React.FC = () => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 border border-gray-100 shadow-xl rounded-lg text-sm">
-          <p className="font-semibold text-gray-900">{payload[0].payload.fullName}</p>
+        <div className="bg-white dark:bg-gray-800 p-3 border border-gray-100 dark:border-gray-700 shadow-xl rounded-lg text-sm transition-colors duration-200">
+          <p className="font-semibold text-gray-900 dark:text-white">{payload[0].payload.fullName}</p>
           <p className="text-primary font-medium">{payload[0].value} votes</p>
         </div>
       );
@@ -64,13 +64,13 @@ const PollView: React.FC = () => {
       <div className="flex items-center justify-between mb-8">
         <button 
           onClick={() => navigate('/')}
-          className="flex items-center text-gray-500 hover:text-gray-800 transition-colors"
+          className="flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Dashboard
         </button>
         <div className="flex space-x-2">
-            <button onClick={handleDelete} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors" title="Delete Poll">
+            <button onClick={handleDelete} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors" title="Delete Poll">
                 <Trash2 className="w-5 h-5" />
             </button>
         </div>
@@ -79,15 +79,15 @@ const PollView: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Column: Voting Area */}
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-200">
             <div className="mb-6">
-               <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-semibold rounded-full uppercase tracking-wider mb-3 inline-block">
+               <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-semibold rounded-full uppercase tracking-wider mb-3 inline-block">
                   {poll.category || 'General'}
                 </span>
-                <h1 className="text-3xl font-bold text-gray-900 leading-tight mb-3">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white leading-tight mb-3 transition-colors duration-200">
                   {poll.question}
                 </h1>
-                <p className="text-gray-500 text-lg leading-relaxed">
+                <p className="text-gray-500 dark:text-gray-400 text-lg leading-relaxed transition-colors duration-200">
                   {poll.description}
                 </p>
             </div>
@@ -104,16 +104,16 @@ const PollView: React.FC = () => {
                     disabled={!!userVote}
                     className={`relative w-full text-left p-4 rounded-xl border-2 transition-all overflow-hidden group ${
                       isSelected 
-                        ? 'border-primary bg-indigo-50' 
+                        ? 'border-primary bg-indigo-50 dark:bg-indigo-900/20' 
                         : userVote 
-                            ? 'border-gray-100 bg-gray-50 opacity-60' 
-                            : 'border-gray-100 hover:border-primary hover:shadow-md bg-white'
+                            ? 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 opacity-60' 
+                            : 'border-gray-100 dark:border-gray-700 hover:border-primary dark:hover:border-primary hover:shadow-md bg-white dark:bg-gray-800'
                     }`}
                   >
                     {/* Progress Bar Background (only if voted) */}
                     {userVote && (
                       <div 
-                        className="absolute left-0 top-0 bottom-0 bg-indigo-100 transition-all duration-1000 ease-out"
+                        className="absolute left-0 top-0 bottom-0 bg-indigo-100 dark:bg-indigo-900/40 transition-all duration-1000 ease-out"
                         style={{ width: `${percentage}%`, opacity: 0.5 }}
                       />
                     )}
@@ -121,19 +121,19 @@ const PollView: React.FC = () => {
                     <div className="relative flex justify-between items-center z-10">
                       <div className="flex items-center">
                         <div className={`w-6 h-6 rounded-full border flex items-center justify-center mr-4 transition-colors ${
-                          isSelected ? 'border-primary bg-primary text-white' : 'border-gray-300 text-transparent'
+                          isSelected ? 'border-primary bg-primary text-white' : 'border-gray-300 dark:border-gray-600 text-transparent'
                         }`}>
                           <CheckCircle className="w-4 h-4" />
                         </div>
-                        <span className={`font-medium text-lg ${isSelected ? 'text-primary' : 'text-gray-700'}`}>
+                        <span className={`font-medium text-lg ${isSelected ? 'text-primary dark:text-indigo-400' : 'text-gray-700 dark:text-gray-300'}`}>
                           {option.text}
                         </span>
                       </div>
                       
                       {userVote && (
                         <div className="text-right">
-                          <span className="block font-bold text-gray-900">{percentage}%</span>
-                          <span className="text-xs text-gray-500">{option.votes} votes</span>
+                          <span className="block font-bold text-gray-900 dark:text-white">{percentage}%</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">{option.votes} votes</span>
                         </div>
                       )}
                     </div>
@@ -143,13 +143,13 @@ const PollView: React.FC = () => {
             </div>
 
             {userVote && (
-               <div className="mt-6 p-4 bg-green-50 text-green-700 rounded-lg flex items-center justify-center animate-fade-in">
+               <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg flex items-center justify-center animate-fade-in transition-colors duration-200">
                   <CheckCircle className="w-5 h-5 mr-2" />
                   <span>Thanks for voting! Results are updated in real-time.</span>
                </div>
             )}
             
-            <div className="mt-6 flex items-center justify-between text-sm text-gray-400 pt-6 border-t border-gray-100">
+            <div className="mt-6 flex items-center justify-between text-sm text-gray-400 dark:text-gray-500 pt-6 border-t border-gray-100 dark:border-gray-700 transition-colors duration-200">
                <span>Total votes: {totalVotes}</span>
                <button className="flex items-center hover:text-primary transition-colors">
                   <Share2 className="w-4 h-4 mr-1" />
@@ -161,10 +161,10 @@ const PollView: React.FC = () => {
 
         {/* Right Column: Visualization */}
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 h-full flex flex-col">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 h-full flex flex-col transition-colors duration-200">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center transition-colors duration-200">
                Live Results
-               {totalVotes === 0 && <span className="ml-2 text-sm font-normal text-gray-400">(No votes yet)</span>}
+               {totalVotes === 0 && <span className="ml-2 text-sm font-normal text-gray-400 dark:text-gray-500">(No votes yet)</span>}
             </h3>
             
             <div className="flex-grow min-h-[300px]">
@@ -193,9 +193,9 @@ const PollView: React.FC = () => {
                    </BarChart>
                  </ResponsiveContainer>
                ) : (
-                   <div className="h-full flex flex-col items-center justify-center text-gray-300">
-                       <div className="w-24 h-24 rounded-full bg-gray-50 flex items-center justify-center mb-4">
-                           <BarChart className="w-10 h-10 text-gray-300" />
+                   <div className="h-full flex flex-col items-center justify-center text-gray-300 dark:text-gray-600">
+                       <div className="w-24 h-24 rounded-full bg-gray-50 dark:bg-gray-700/50 flex items-center justify-center mb-4 transition-colors duration-200">
+                           <BarChart className="w-10 h-10 text-gray-300 dark:text-gray-500" />
                        </div>
                        <p>Waiting for the first vote...</p>
                    </div>
@@ -204,8 +204,8 @@ const PollView: React.FC = () => {
 
              {/* Secondary Viz: Pie Chart (Small) */}
              {totalVotes > 0 && (
-                 <div className="mt-8 pt-8 border-t border-gray-100">
-                    <h4 className="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">Distribution</h4>
+                 <div className="mt-8 pt-8 border-t border-gray-100 dark:border-gray-700 transition-colors duration-200">
+                    <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-4 uppercase tracking-wider">Distribution</h4>
                     <div className="h-48 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>

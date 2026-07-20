@@ -19,7 +19,7 @@ const PollList: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <h2 className="text-2xl font-bold text-gray-800">Active Polls</h2>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white transition-colors duration-200">Active Polls</h2>
         
         <div className="flex space-x-2 overflow-x-auto pb-2 w-full sm:w-auto">
           {categories.map(cat => (
@@ -29,7 +29,7 @@ const PollList: React.FC = () => {
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
                 filter === cat 
                   ? 'bg-primary text-white shadow-md' 
-                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
               }`}
             >
               {cat}
@@ -39,9 +39,9 @@ const PollList: React.FC = () => {
       </div>
 
       {filteredPolls.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-300">
-          <BarChart2 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500 text-lg">No polls found in this category.</p>
+        <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-600 transition-colors duration-200">
+          <BarChart2 className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+          <p className="text-gray-500 dark:text-gray-400 text-lg">No polls found in this category.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -49,29 +49,29 @@ const PollList: React.FC = () => {
             <Link 
               key={poll.id} 
               to={`/poll/${poll.id}`}
-              className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all border border-gray-100 flex flex-col h-full"
+              className="group bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all border border-gray-100 dark:border-gray-700 flex flex-col h-full"
             >
               <div className="flex justify-between items-start mb-4">
-                <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-semibold rounded-full uppercase tracking-wider">
+                <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-semibold rounded-full uppercase tracking-wider">
                   {poll.category || 'General'}
                 </span>
                 {userVotes[poll.id] && (
-                  <span className="flex items-center text-green-600 text-xs font-medium">
-                    <span className="w-2 h-2 bg-green-500 rounded-full mr-1.5"></span>
+                  <span className="flex items-center text-green-600 dark:text-green-400 text-xs font-medium">
+                    <span className="w-2 h-2 bg-green-500 dark:bg-green-400 rounded-full mr-1.5"></span>
                     Voted
                   </span>
                 )}
               </div>
               
-              <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-primary transition-colors line-clamp-2">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-primary dark:group-hover:text-primary transition-colors line-clamp-2">
                 {poll.question}
               </h3>
               
-              <p className="text-gray-500 text-sm mb-6 flex-grow line-clamp-2">
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 flex-grow line-clamp-2">
                 {poll.description || "No description provided."}
               </p>
               
-              <div className="flex items-center justify-between pt-4 border-t border-gray-100 text-sm text-gray-400">
+              <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700 text-sm text-gray-400 dark:text-gray-500 transition-colors duration-200">
                 <div className="flex items-center space-x-4">
                     <div className="flex items-center">
                         <Users className="w-4 h-4 mr-1.5" />
@@ -82,7 +82,7 @@ const PollList: React.FC = () => {
                         <span>{new Date(poll.createdAt).toLocaleDateString()}</span>
                     </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                <ChevronRight className="w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:text-primary dark:group-hover:text-primary group-hover:translate-x-1 transition-all" />
               </div>
             </Link>
           ))}

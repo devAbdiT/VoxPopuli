@@ -1,0 +1,6 @@
+{
+  "name": "VoxPopuli - Live Polling",
+  "description": "An interactive, real-time polling platform featuring live data visualization, Redux state management, and Gemini-powered poll generation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

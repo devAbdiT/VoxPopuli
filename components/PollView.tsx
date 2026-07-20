@@ -1,9 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, votePollEvent, deletePollEvent } from '../store';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
-import { ArrowLeft, CheckCircle, Trash2, Share2, Info } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Trash2, Share2, Info, Copy } from 'lucide-react';
 import { motion } from 'motion/react';
 
 const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
@@ -33,6 +33,17 @@ const PollView: React.FC = () => {
   const poll = useSelector((state: RootState) => state.polls.find(p => p.id === id));
   const userVote = useSelector((state: RootState) => state.userVotes[id || '']);
   const loading = useSelector((state: RootState) => state.loading);
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy link', err);
+    }
+  };
 
   if (loading) {
     return (
@@ -178,9 +189,12 @@ const PollView: React.FC = () => {
             
             <div className="mt-6 flex items-center justify-between text-sm text-gray-400 dark:text-gray-500 pt-6 border-t border-gray-100 dark:border-gray-700 transition-colors duration-200">
                <span>Total votes: {totalVotes}</span>
-               <button className="flex items-center hover:text-primary transition-colors">
-                  <Share2 className="w-4 h-4 mr-1" />
-                  Share Poll
+               <button 
+                 onClick={handleShare}
+                 className="flex items-center hover:text-primary transition-colors"
+               >
+                  {copied ? <CheckCircle className="w-4 h-4 mr-1 text-green-500" /> : <Copy className="w-4 h-4 mr-1" />}
+                  {copied ? <span className="text-green-500">Copied!</span> : 'Copy Link'}
                </button>
             </div>
           </div>

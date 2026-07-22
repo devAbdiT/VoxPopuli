@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, votePollEvent, deletePollEvent, addCommentEvent } from '../store';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
-import { ArrowLeft, CheckCircle, Trash2, Share2, Info, Copy, MessageSquare, Send } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Trash2, Share2, Info, Copy, MessageSquare, Send, BadgeCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -32,6 +32,7 @@ const PollView: React.FC = () => {
 
   const poll = useSelector((state: RootState) => state.polls.find(p => p.id === id));
   const userVote = useSelector((state: RootState) => state.userVotes[id || '']);
+  const allUserVotes = useSelector((state: RootState) => state.userVotes);
   const loading = useSelector((state: RootState) => state.loading);
   const [copied, setCopied] = useState(false);
   const [commentText, setCommentText] = useState('');
@@ -80,11 +81,14 @@ const PollView: React.FC = () => {
     e.preventDefault();
     if (!commentText.trim() || !poll) return;
 
+    const isTopContributor = Object.keys(allUserVotes).length > 1;
+
     const newComment = {
       id: uuidv4(),
       text: commentText.trim(),
       author: authorName.trim() || 'Anonymous',
       createdAt: Date.now(),
+      isTopContributor,
     };
 
     addCommentEvent(poll.id, newComment);
@@ -342,7 +346,14 @@ const PollView: React.FC = () => {
                   className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-800"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">{comment.author}</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">{comment.author}</span>
+                      {comment.isTopContributor && (
+                        <span title="Top Contributor" className="flex items-center text-primary/80 dark:text-primary">
+                          <BadgeCheck className="w-4 h-4" />
+                        </span>
+                      )}
+                    </div>
                     <span className="text-xs text-gray-400">
                       {new Date(comment.createdAt).toLocaleDateString()} at {new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>

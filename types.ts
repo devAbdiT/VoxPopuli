@@ -9,6 +9,7 @@ export interface Comment {
   text: string;
   createdAt: number;
   author: string;
+  isTopContributor?: boolean;
 }
 
 export interface Poll {

@@ -27,6 +27,7 @@ async function startServer() {
       createdAt: Date.now(),
       totalVotes: 150,
       category: 'Technology',
+      comments: [],
       options: [
         { id: 'opt_1', text: 'React', votes: 85 },
         { id: 'opt_2', text: 'Vue', votes: 30 },
@@ -41,6 +42,7 @@ async function startServer() {
       createdAt: Date.now() - 100000,
       totalVotes: 82,
       category: 'Lifestyle',
+      comments: [],
       options: [
         { id: 'opt_c', text: 'Coffee', votes: 50 },
         { id: 'opt_t', text: 'Tea', votes: 32 },
@@ -81,6 +83,19 @@ async function startServer() {
     socket.on("delete_poll", (pollId: string) => {
       polls = polls.filter(p => p.id !== pollId);
       io.emit("poll_deleted", pollId);
+    });
+
+    // Handle add comment
+    socket.on("add_comment", (data: { pollId: string, comment: any }) => {
+      const { pollId, comment } = data;
+      const pollIndex = polls.findIndex(p => p.id === pollId);
+      if (pollIndex !== -1) {
+        if (!polls[pollIndex].comments) {
+          polls[pollIndex].comments = [];
+        }
+        polls[pollIndex].comments!.push(comment);
+        io.emit("poll_updated", polls[pollIndex]);
+      }
     });
 
     socket.on("disconnect", () => {

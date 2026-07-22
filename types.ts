@@ -4,6 +4,13 @@ export interface PollOption {
   votes: number;
 }
 
+export interface Comment {
+  id: string;
+  text: string;
+  createdAt: number;
+  author: string;
+}
+
 export interface Poll {
   id: string;
   question: string;
@@ -12,6 +19,7 @@ export interface Poll {
   totalVotes: number;
   description?: string;
   category?: string;
+  comments?: Comment[];
 }
 
 export interface PollCreationData {

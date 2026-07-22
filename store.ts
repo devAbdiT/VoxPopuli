@@ -52,6 +52,12 @@ const pollsSlice = createSlice({
         state.polls[index] = poll;
       }
     },
+    pollUpdated: (state, action: PayloadAction<Poll>) => {
+      const index = state.polls.findIndex(p => p.id === action.payload.id);
+      if (index !== -1) {
+        state.polls[index] = action.payload;
+      }
+    },
     pollDeleted: (state, action: PayloadAction<string>) => {
       state.polls = state.polls.filter(p => p.id !== action.payload);
     },
@@ -68,7 +74,7 @@ const pollsSlice = createSlice({
   },
 });
 
-export const { setInitialState, pollCreated, pollVoted, pollDeleted, recordUserVote, setLoading, setError } = pollsSlice.actions;
+export const { setInitialState, pollCreated, pollVoted, pollUpdated, pollDeleted, recordUserVote, setLoading, setError } = pollsSlice.actions;
 
 export const store = configureStore({
   reducer: pollsSlice.reducer,
@@ -91,6 +97,10 @@ socket.on('poll_deleted', (pollId: string) => {
   store.dispatch(pollDeleted(pollId));
 });
 
+socket.on('poll_updated', (poll: Poll) => {
+  store.dispatch(pollUpdated(poll));
+});
+
 // Thunk-like helpers for emitting via socket
 export const createPollEvent = (poll: Poll) => {
   socket.emit('create_poll', poll);
@@ -104,6 +114,10 @@ export const votePollEvent = (pollId: string, optionId: string) => {
 
 export const deletePollEvent = (pollId: string) => {
   socket.emit('delete_poll', pollId);
+};
+
+export const addCommentEvent = (pollId: string, comment: import('./types').Comment) => {
+  socket.emit('add_comment', { pollId, comment });
 };
 
 export type RootState = ReturnType<typeof store.getState>;

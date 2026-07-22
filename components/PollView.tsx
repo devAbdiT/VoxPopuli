@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState, votePollEvent, deletePollEvent } from '../store';
+import { RootState, votePollEvent, deletePollEvent, addCommentEvent } from '../store';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
-import { ArrowLeft, CheckCircle, Trash2, Share2, Info, Copy } from 'lucide-react';
-import { motion } from 'motion/react';
+import { ArrowLeft, CheckCircle, Trash2, Share2, Info, Copy, MessageSquare, Send } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { v4 as uuidv4 } from 'uuid';
 
 const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -34,6 +35,8 @@ const PollView: React.FC = () => {
   const userVote = useSelector((state: RootState) => state.userVotes[id || '']);
   const loading = useSelector((state: RootState) => state.loading);
   const [copied, setCopied] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [authorName, setAuthorName] = useState('');
 
   const handleShare = async () => {
     try {
@@ -73,6 +76,21 @@ const PollView: React.FC = () => {
           navigate('/');
       }
   }
+
+  const handleSubmitComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commentText.trim() || !poll) return;
+
+    const newComment = {
+      id: uuidv4(),
+      text: commentText.trim(),
+      author: authorName.trim() || 'Anonymous',
+      createdAt: Date.now(),
+    };
+
+    addCommentEvent(poll.id, newComment);
+    setCommentText('');
+  };
 
   const chartData = useMemo(() => {
     return poll.options.map(opt => ({
@@ -270,6 +288,68 @@ const PollView: React.FC = () => {
                  </div>
              )}
           </div>
+        </div>
+      </div>
+
+      {/* Comments Section */}
+      <div className="mt-8 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-8 transition-colors duration-200">
+        <h3 className="text-2xl font-display font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+          <MessageSquare className="w-6 h-6 mr-3 text-primary" />
+          Discussion
+        </h3>
+
+        <form onSubmit={handleSubmitComment} className="mb-8">
+          <div className="flex flex-col sm:flex-row gap-4 mb-4">
+            <input
+              type="text"
+              placeholder="Your name (optional)"
+              value={authorName}
+              onChange={(e) => setAuthorName(e.target.value)}
+              className="px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 dark:text-white sm:w-48"
+            />
+            <div className="relative flex-grow">
+              <input
+                type="text"
+                placeholder="Share your thoughts..."
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                className="w-full pl-4 pr-12 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 dark:text-white"
+                required
+              />
+              <button
+                type="submit"
+                disabled={!commentText.trim()}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 text-white bg-primary rounded-md disabled:opacity-50 hover:bg-primary/90 transition-colors"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <div className="space-y-4">
+          <AnimatePresence>
+            {poll.comments && poll.comments.length > 0 ? (
+              poll.comments.map((comment) => (
+                <motion.div
+                  key={comment.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-800"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">{comment.author}</span>
+                    <span className="text-xs text-gray-400">
+                      {new Date(comment.createdAt).toLocaleDateString()} at {new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-300 text-sm">{comment.text}</p>
+                </motion.div>
+              ))
+            ) : (
+              <p className="text-center text-gray-500 dark:text-gray-400 py-4">No comments yet. Be the first to share your thoughts!</p>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>

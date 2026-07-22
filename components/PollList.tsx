@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { Link } from 'react-router-dom';
 import { Poll, PollCategory } from '../types';
-import { BarChart2, Clock, Users, ChevronRight } from 'lucide-react';
+import { BarChart2, Clock, Users, ChevronRight, Search } from 'lucide-react';
 import { motion } from 'motion/react';
 
 const containerVariants = {
@@ -24,12 +24,15 @@ const PollList: React.FC = () => {
   const userVotes = useSelector((state: RootState) => state.userVotes);
   const loading = useSelector((state: RootState) => state.loading);
   const [filter, setFilter] = useState<string>('All');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const categories = ['All', ...Object.values(PollCategory)];
 
-  const filteredPolls = filter === 'All' 
-    ? polls 
-    : polls.filter(p => p.category === filter);
+  const filteredPolls = polls.filter(p => {
+    const matchesCategory = filter === 'All' || p.category === filter;
+    const matchesSearch = p.question.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   if (loading) {
     return (
@@ -41,10 +44,22 @@ const PollList: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <h2 className="text-3xl font-display font-bold text-gray-800 dark:text-white transition-colors duration-200">Active Polls</h2>
         
-        <div className="flex space-x-2 overflow-x-auto pb-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-center w-full lg:w-auto gap-4">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Search polls..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 dark:text-white transition-colors"
+            />
+          </div>
+          
+          <div className="flex space-x-2 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto">
           {categories.map(cat => (
             <button
               key={cat}
@@ -58,6 +73,7 @@ const PollList: React.FC = () => {
               {cat}
             </button>
           ))}
+        </div>
         </div>
       </div>
 

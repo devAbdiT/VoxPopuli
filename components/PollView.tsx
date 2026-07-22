@@ -13,15 +13,14 @@ const CustomBar = (props: any) => {
   const { fill, x, y, width, height } = props;
   
   return (
-    <motion.rect
+    <rect
       x={x}
       y={y}
       height={height}
       fill={fill}
-      initial={{ width: 0 }}
-      animate={{ width: width > 0 ? width : 0 }}
-      transition={{ duration: 0.8, ease: "easeOut" }}
+      width={width > 0 ? width : 0}
       rx={4}
+      style={{ transition: 'all 0.5s ease-in-out' }}
     />
   );
 };
@@ -244,7 +243,7 @@ const PollView: React.FC = () => {
                         tickLine={false}
                      />
                      <Tooltip content={<CustomTooltip />} cursor={{fill: '#f3f4f6', radius: 8}} />
-                     <Bar dataKey="votes" shape={<CustomBar />} barSize={32}>
+                     <Bar dataKey="votes" shape={<CustomBar />} barSize={32} isAnimationActive={false}>
                         {chartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
@@ -276,9 +275,14 @@ const PollView: React.FC = () => {
                                     outerRadius={70}
                                     paddingAngle={5}
                                     dataKey="votes"
+                                    isAnimationActive={false}
                                 >
                                     {chartData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        <Cell 
+                                          key={`cell-${index}`} 
+                                          fill={COLORS[index % COLORS.length]} 
+                                          style={{ transition: 'all 0.5s ease-in-out' }}
+                                        />
                                     ))}
                                 </Pie>
                                 <Tooltip />

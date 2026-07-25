@@ -21,12 +21,14 @@ export interface Poll {
   description?: string;
   category?: string;
   comments?: Comment[];
+  expiresAt?: number;
 }
 
 export interface PollCreationData {
   question: string;
   options: string[];
   description: string;
+  expiresAt?: number;
 }
 
 export interface AppState {

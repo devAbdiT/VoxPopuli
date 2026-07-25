@@ -89,16 +89,25 @@ const PollList: React.FC = () => {
           animate="show"
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         >
-          {filteredPolls.map((poll) => (
+          {filteredPolls.map((poll) => {
+            const isExpired = poll.expiresAt ? Date.now() > poll.expiresAt : false;
+            return (
             <motion.div key={poll.id} variants={itemVariants} className="h-full">
               <Link 
                 to={`/poll/${poll.id}`}
                 className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 dark:border-gray-700/50 hover:border-primary/50 dark:hover:border-primary/50 flex flex-col h-full"
               >
                 <div className="flex justify-between items-start mb-4">
-                <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-semibold rounded-full uppercase tracking-wider">
-                  {poll.category || 'General'}
-                </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-semibold rounded-full uppercase tracking-wider">
+                    {poll.category || 'General'}
+                  </span>
+                  {isExpired && (
+                    <span className="px-3 py-1 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-xs font-semibold rounded-full uppercase tracking-wider">
+                      Closed
+                    </span>
+                  )}
+                </div>
                 {userVotes[poll.id] && (
                   <span className="flex items-center text-green-600 dark:text-green-400 text-xs font-medium">
                     <span className="w-2 h-2 bg-green-500 dark:bg-green-400 rounded-full mr-1.5"></span>
@@ -130,7 +139,8 @@ const PollList: React.FC = () => {
               </div>
             </Link>
             </motion.div>
-          ))}
+            );
+          })}
         </motion.div>
       )}
     </div>

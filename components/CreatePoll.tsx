@@ -19,6 +19,7 @@ const CreatePoll: React.FC = () => {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string>(PollCategory.TECH);
   const [options, setOptions] = useState<string[]>(['', '']);
+  const [expiry, setExpiry] = useState<string>('never');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleAddOption = () => {
@@ -69,6 +70,14 @@ const CreatePoll: React.FC = () => {
     e.preventDefault();
     if (!validate()) return;
 
+    let expiresAt: number | undefined;
+    if (expiry !== 'never') {
+      const now = Date.now();
+      if (expiry === '1h') expiresAt = now + 60 * 60 * 1000;
+      else if (expiry === '24h') expiresAt = now + 24 * 60 * 60 * 1000;
+      else if (expiry === '7d') expiresAt = now + 7 * 24 * 60 * 60 * 1000;
+    }
+
     const newPoll = {
       id: generateId(),
       question,
@@ -76,6 +85,7 @@ const CreatePoll: React.FC = () => {
       category,
       createdAt: Date.now(),
       totalVotes: 0,
+      expiresAt,
       options: options.map(text => ({
         id: generateId(),
         text,
@@ -174,20 +184,39 @@ const CreatePoll: React.FC = () => {
             />
           </div>
 
-          {/* Category */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Category
-            </label>
-            <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none"
-            >
-                {Object.values(PollCategory).map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                ))}
-            </select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Category */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Category
+              </label>
+              <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none"
+              >
+                  {Object.values(PollCategory).map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                  ))}
+              </select>
+            </div>
+
+            {/* Expiry */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Poll Duration
+              </label>
+              <select
+                  value={expiry}
+                  onChange={(e) => setExpiry(e.target.value)}
+                  className="w-full px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none"
+              >
+                  <option value="never">Never expires</option>
+                  <option value="1h">1 Hour</option>
+                  <option value="24h">24 Hours</option>
+                  <option value="7d">7 Days</option>
+              </select>
+            </div>
           </div>
 
           {/* Options */}

@@ -62,13 +62,18 @@ async function startServer() {
       const pollIndex = polls.findIndex(p => p.id === pollId);
       
       if (pollIndex !== -1) {
-        const optionIndex = polls[pollIndex].options.findIndex(o => o.id === optionId);
-        if (optionIndex !== -1) {
-          polls[pollIndex].options[optionIndex].votes += 1;
-          polls[pollIndex].totalVotes += 1;
-          
-          // Broadcast to all clients including the sender
-          io.emit("poll_voted", { pollId, optionId, poll: polls[pollIndex] });
+        const poll = polls[pollIndex];
+        const isExpired = poll.expiresAt ? Date.now() > poll.expiresAt : false;
+        
+        if (!isExpired) {
+          const optionIndex = poll.options.findIndex(o => o.id === optionId);
+          if (optionIndex !== -1) {
+            poll.options[optionIndex].votes += 1;
+            poll.totalVotes += 1;
+            
+            // Broadcast to all clients including the sender
+            io.emit("poll_voted", { pollId, optionId, poll });
+          }
         }
       }
     });

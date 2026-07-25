@@ -104,6 +104,7 @@ const PollView: React.FC = () => {
   }, [poll]);
 
   const totalVotes = poll.totalVotes;
+  const isExpired = poll.expiresAt ? Date.now() > poll.expiresAt : false;
 
   // Custom Tooltip for Chart
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -151,6 +152,16 @@ const PollView: React.FC = () => {
                 </p>
             </div>
 
+              {isExpired && (
+                <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400 rounded-lg flex items-center shadow-sm border border-yellow-200 dark:border-yellow-700/50">
+                  <Info className="w-5 h-5 mr-3 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold text-sm">Poll Closed</h4>
+                    <p className="text-xs mt-0.5 opacity-90">This poll has ended. You can still view the results and comments.</p>
+                  </div>
+                </div>
+              )}
+
             <div className="space-y-3">
               {poll.options.map((option) => {
                 const isSelected = userVote === option.id;
@@ -160,17 +171,17 @@ const PollView: React.FC = () => {
                   <button
                     key={option.id}
                     onClick={() => handleVote(option.id)}
-                    disabled={!!userVote}
+                    disabled={!!userVote || isExpired}
                     className={`relative w-full text-left p-4 rounded-xl border-2 transition-all overflow-hidden group ${
                       isSelected 
                         ? 'border-primary bg-indigo-50 dark:bg-indigo-900/20' 
-                        : userVote 
+                        : (userVote || isExpired)
                             ? 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 opacity-60' 
                             : 'border-gray-100 dark:border-gray-700 hover:border-primary dark:hover:border-primary hover:shadow-md bg-white dark:bg-gray-800'
                     }`}
                   >
-                    {/* Progress Bar Background (only if voted) */}
-                    {userVote && (
+                    {/* Progress Bar Background (only if voted or expired) */}
+                    {(userVote || isExpired) && (
                       <div 
                         className="absolute left-0 top-0 bottom-0 bg-indigo-100 dark:bg-indigo-900/40 transition-all duration-1000 ease-out"
                         style={{ width: `${percentage}%`, opacity: 0.5 }}
@@ -189,7 +200,7 @@ const PollView: React.FC = () => {
                         </span>
                       </div>
                       
-                      {userVote && (
+                      {(userVote || isExpired) && (
                         <div className="text-right">
                           <span className="block font-bold text-gray-900 dark:text-white">{percentage}%</span>
                           <span className="text-xs text-gray-500 dark:text-gray-400">{option.votes} votes</span>
@@ -208,8 +219,16 @@ const PollView: React.FC = () => {
                </div>
             )}
             
-            <div className="mt-6 flex items-center justify-between text-sm text-gray-400 dark:text-gray-500 pt-6 border-t border-gray-100 dark:border-gray-700 transition-colors duration-200">
-               <span>Total votes: {totalVotes}</span>
+            <div className="mt-6 flex flex-col sm:flex-row items-center justify-between text-sm text-gray-400 dark:text-gray-500 pt-6 border-t border-gray-100 dark:border-gray-700 transition-colors duration-200">
+               <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4 sm:mb-0">
+                 <span>Total votes: {totalVotes}</span>
+                 {poll.expiresAt && !isExpired && (
+                   <>
+                     <span className="hidden sm:inline">&bull;</span>
+                     <span>Closes on {new Date(poll.expiresAt).toLocaleDateString()} at {new Date(poll.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                   </>
+                 )}
+               </div>
                <button 
                  onClick={handleShare}
                  className="flex items-center hover:text-primary transition-colors"

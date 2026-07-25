@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, votePollEvent, deletePollEvent, addCommentEvent } from '../store';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
-import { ArrowLeft, CheckCircle, Trash2, Share2, Info, Copy, MessageSquare, Send, BadgeCheck, Lock } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Trash2, Share2, Info, Copy, MessageSquare, Send, BadgeCheck, Lock, QrCode, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { QRCodeSVG } from 'qrcode.react';
 import { v4 as uuidv4 } from 'uuid';
 
 const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
@@ -36,6 +37,7 @@ const PollView: React.FC = () => {
   const loading = useSelector((state: RootState) => state.loading);
   const [copied, setCopied] = useState(false);
   const [commentText, setCommentText] = useState('');
+  const [showQRModal, setShowQRModal] = useState(false);
   const [authorName, setAuthorName] = useState('');
 
   const handleShare = async () => {
@@ -237,13 +239,22 @@ const PollView: React.FC = () => {
                    </>
                  )}
                </div>
-               <button 
-                 onClick={handleShare}
-                 className="flex items-center hover:text-primary transition-colors"
-               >
-                  {copied ? <CheckCircle className="w-4 h-4 mr-1 text-green-500" /> : <Copy className="w-4 h-4 mr-1" />}
-                  {copied ? <span className="text-green-500">Copied!</span> : 'Copy Link'}
-               </button>
+               <div className="flex flex-wrap items-center gap-4">
+                 <button 
+                   onClick={() => setShowQRModal(true)}
+                   className="flex items-center hover:text-primary transition-colors"
+                 >
+                    <QrCode className="w-4 h-4 mr-1" />
+                    Share QR
+                 </button>
+                 <button 
+                   onClick={handleShare}
+                   className="flex items-center hover:text-primary transition-colors"
+                 >
+                    {copied ? <CheckCircle className="w-4 h-4 mr-1 text-green-500" /> : <Copy className="w-4 h-4 mr-1" />}
+                    {copied ? <span className="text-green-500">Copied!</span> : 'Copy Link'}
+                 </button>
+               </div>
             </div>
           </div>
         </div>
@@ -394,6 +405,46 @@ const PollView: React.FC = () => {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* QR Code Modal */}
+      <AnimatePresence>
+        {showQRModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowQRModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-sm w-full shadow-2xl relative flex flex-col items-center border border-gray-100 dark:border-gray-700"
+            >
+              <button 
+                onClick={() => setShowQRModal(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 text-primary rounded-full flex items-center justify-center mb-4">
+                <QrCode className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 text-center">Scan to Vote</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-8">
+                Point your camera at this QR code to open the poll on your device.
+              </p>
+              
+              <div className="bg-white p-4 rounded-xl shadow-inner border border-gray-100 flex items-center justify-center">
+                <QRCodeSVG value={`${window.location.origin}/poll/${poll.id}`} size={200} />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

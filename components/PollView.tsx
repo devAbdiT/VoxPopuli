@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, votePollEvent, deletePollEvent, addCommentEvent } from '../store';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
-import { ArrowLeft, CheckCircle, Trash2, Share2, Info, Copy, MessageSquare, Send, BadgeCheck } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Trash2, Share2, Info, Copy, MessageSquare, Send, BadgeCheck, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -141,9 +141,17 @@ const PollView: React.FC = () => {
         <div className="space-y-6">
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-8 transition-colors duration-200">
             <div className="mb-6">
-               <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-semibold rounded-full uppercase tracking-wider mb-3 inline-block shadow-sm">
-                  {poll.category || 'General'}
-                </span>
+               <div className="flex items-center gap-2 mb-3 flex-wrap">
+                 <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-semibold rounded-full uppercase tracking-wider shadow-sm">
+                    {poll.category || 'General'}
+                  </span>
+                  {poll.isPrivate && (
+                    <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-semibold rounded-full uppercase tracking-wider shadow-sm flex items-center">
+                      <Lock className="w-3 h-3 mr-1" />
+                      Unlisted
+                    </span>
+                  )}
+               </div>
                 <h1 className="text-4xl font-display font-bold text-gray-900 dark:text-white leading-tight mb-3 transition-colors duration-200">
                   {poll.question}
                 </h1>

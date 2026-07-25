@@ -22,6 +22,7 @@ export interface Poll {
   category?: string;
   comments?: Comment[];
   expiresAt?: number;
+  isPrivate?: boolean;
 }
 
 export interface PollCreationData {
@@ -29,6 +30,7 @@ export interface PollCreationData {
   options: string[];
   description: string;
   expiresAt?: number;
+  isPrivate?: boolean;
 }
 
 export interface AppState {

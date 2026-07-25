@@ -29,6 +29,7 @@ const PollList: React.FC = () => {
   const categories = ['All', ...Object.values(PollCategory)];
 
   const filteredPolls = polls.filter(p => {
+    if (p.isPrivate) return false;
     const matchesCategory = filter === 'All' || p.category === filter;
     const matchesSearch = p.question.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;

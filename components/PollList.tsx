@@ -25,14 +25,38 @@ const PollList: React.FC = () => {
   const loading = useSelector((state: RootState) => state.loading);
   const [filter, setFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sortBy, setSortBy] = useState<string>('Newest');
 
   const categories = ['All', ...Object.values(PollCategory)];
+  const sortOptions = ['Newest', 'Trending', 'Closing Soon'];
 
   const filteredPolls = polls.filter(p => {
     if (p.isPrivate) return false;
     const matchesCategory = filter === 'All' || p.category === filter;
     const matchesSearch = p.question.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
+  });
+
+  const sortedPolls = [...filteredPolls].sort((a, b) => {
+    if (sortBy === 'Trending') {
+      return b.totalVotes - a.totalVotes;
+    } else if (sortBy === 'Closing Soon') {
+      const now = Date.now();
+      const aActiveExpiry = a.expiresAt && now <= a.expiresAt;
+      const bActiveExpiry = b.expiresAt && now <= b.expiresAt;
+      
+      if (aActiveExpiry && bActiveExpiry) {
+        return a.expiresAt! - b.expiresAt!;
+      } else if (aActiveExpiry) {
+        return -1;
+      } else if (bActiveExpiry) {
+        return 1;
+      } else {
+        return b.createdAt - a.createdAt;
+      }
+    }
+    // Default: Newest
+    return b.createdAt - a.createdAt;
   });
 
   if (loading) {
@@ -74,11 +98,23 @@ const PollList: React.FC = () => {
               {cat}
             </button>
           ))}
-        </div>
+          </div>
+          
+          <div className="w-full sm:w-auto">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 dark:text-white transition-colors"
+            >
+              {sortOptions.map(option => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
-      {filteredPolls.length === 0 ? (
+      {sortedPolls.length === 0 ? (
         <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-600 transition-colors duration-200">
           <BarChart2 className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
           <p className="text-gray-500 dark:text-gray-400 text-lg">No polls found in this category.</p>
@@ -90,7 +126,7 @@ const PollList: React.FC = () => {
           animate="show"
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         >
-          {filteredPolls.map((poll) => {
+          {sortedPolls.map((poll) => {
             const isExpired = poll.expiresAt ? Date.now() > poll.expiresAt : false;
             return (
             <motion.div key={poll.id} variants={itemVariants} className="h-full">

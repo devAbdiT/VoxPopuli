@@ -6,6 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieCha
 import { ArrowLeft, CheckCircle, Trash2, Share2, Info, Copy, MessageSquare, Send, BadgeCheck, Lock, QrCode, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
+import confetti from 'canvas-confetti';
 import { v4 as uuidv4 } from 'uuid';
 
 const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
@@ -69,6 +70,15 @@ const PollView: React.FC = () => {
 
   const handleVote = (optionId: string) => {
     if (userVote) return;
+    
+    // Trigger confetti
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+    });
+
     votePollEvent(poll.id, optionId);
   };
   

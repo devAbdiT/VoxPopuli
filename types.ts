@@ -24,6 +24,10 @@ export interface Poll {
   expiresAt?: number;
   isPrivate?: boolean;
   allowMultipleVotes?: boolean;
+  theme?: {
+    accentColor?: string;
+    backgroundImage?: string;
+  };
 }
 
 export interface PollCreationData {
@@ -33,6 +37,10 @@ export interface PollCreationData {
   expiresAt?: number;
   isPrivate?: boolean;
   allowMultipleVotes?: boolean;
+  theme?: {
+    accentColor?: string;
+    backgroundImage?: string;
+  };
 }
 
 export interface AppState {

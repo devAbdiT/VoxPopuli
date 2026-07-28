@@ -146,7 +146,27 @@ const PollView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className={`max-w-6xl mx-auto ${poll.theme?.accentColor ? 'custom-theme-active' : ''}`}>
+      {poll.theme?.backgroundImage && (
+        <div 
+          className="fixed inset-0 z-[-1] bg-cover bg-center transition-opacity duration-500" 
+          style={{ 
+            backgroundImage: `url(${poll.theme.backgroundImage})`,
+            opacity: 0.15 
+          }}
+        />
+      )}
+      
+      {poll.theme?.accentColor && (
+        <style>{`
+          .custom-theme-active .text-primary { color: ${poll.theme.accentColor} !important; }
+          .custom-theme-active .bg-primary { background-color: ${poll.theme.accentColor} !important; }
+          .custom-theme-active .border-primary { border-color: ${poll.theme.accentColor} !important; }
+          .custom-theme-active .hover\\:text-primary:hover { color: ${poll.theme.accentColor} !important; }
+          .custom-theme-active .hover\\:border-primary:hover { border-color: ${poll.theme.accentColor} !important; }
+        `}</style>
+      )}
+
       <div className="flex items-center justify-between mb-8">
         <button 
           onClick={() => navigate('/')}

@@ -40,6 +40,7 @@ const PollView: React.FC = () => {
   const [commentText, setCommentText] = useState('');
   const [showQRModal, setShowQRModal] = useState(false);
   const [authorName, setAuthorName] = useState('');
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
   const handleShare = async () => {
     try {
@@ -68,10 +69,24 @@ const PollView: React.FC = () => {
     );
   }
 
-  const handleVote = (optionId: string) => {
-    if (userVote) return;
+  const isExpired = poll.expiresAt ? Date.now() > poll.expiresAt : false;
+  const hasVoted = Array.isArray(userVote) ? userVote.length > 0 : !!userVote;
+
+  const handleVoteClick = (optionId: string) => {
+    if (hasVoted || isExpired) return;
     
-    // Trigger confetti
+    if (poll.allowMultipleVotes) {
+      setSelectedOptions(prev => 
+        prev.includes(optionId) ? prev.filter(id => id !== optionId) : [...prev, optionId]
+      );
+    } else {
+      submitVotes(optionId);
+    }
+  };
+
+  const submitVotes = (optionIds: string | string[]) => {
+    if (hasVoted || isExpired) return;
+    
     confetti({
       particleCount: 100,
       spread: 70,
@@ -79,7 +94,7 @@ const PollView: React.FC = () => {
       colors: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
     });
 
-    votePollEvent(poll.id, optionId);
+    votePollEvent(poll.id, optionIds);
   };
   
   const handleDelete = () => {
@@ -116,7 +131,6 @@ const PollView: React.FC = () => {
   }, [poll]);
 
   const totalVotes = poll.totalVotes;
-  const isExpired = poll.expiresAt ? Date.now() > poll.expiresAt : false;
 
   // Custom Tooltip for Chart
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -184,24 +198,27 @@ const PollView: React.FC = () => {
 
             <div className="space-y-3">
               {poll.options.map((option) => {
-                const isSelected = userVote === option.id;
+                const isSelected = Array.isArray(userVote) ? userVote.includes(option.id) : userVote === option.id;
+                const isPendingSelection = poll.allowMultipleVotes && selectedOptions.includes(option.id);
+                const isActiveSelection = isSelected || isPendingSelection;
+                
                 const percentage = totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
                 
                 return (
                   <button
                     key={option.id}
-                    onClick={() => handleVote(option.id)}
-                    disabled={!!userVote || isExpired}
+                    onClick={() => handleVoteClick(option.id)}
+                    disabled={hasVoted || isExpired}
                     className={`relative w-full text-left p-4 rounded-xl border-2 transition-all overflow-hidden group ${
-                      isSelected 
+                      isActiveSelection 
                         ? 'border-primary bg-indigo-50 dark:bg-indigo-900/20' 
-                        : (userVote || isExpired)
+                        : (hasVoted || isExpired)
                             ? 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 opacity-60' 
                             : 'border-gray-100 dark:border-gray-700 hover:border-primary dark:hover:border-primary hover:shadow-md bg-white dark:bg-gray-800'
                     }`}
                   >
                     {/* Progress Bar Background (only if voted or expired) */}
-                    {(userVote || isExpired) && (
+                    {(hasVoted || isExpired) && (
                       <div 
                         className="absolute left-0 top-0 bottom-0 bg-indigo-100 dark:bg-indigo-900/40 transition-all duration-1000 ease-out"
                         style={{ width: `${percentage}%`, opacity: 0.5 }}
@@ -210,17 +227,17 @@ const PollView: React.FC = () => {
                     
                     <div className="relative flex justify-between items-center z-10">
                       <div className="flex items-center">
-                        <div className={`w-6 h-6 rounded-full border flex items-center justify-center mr-4 transition-colors ${
-                          isSelected ? 'border-primary bg-primary text-white' : 'border-gray-300 dark:border-gray-600 text-transparent'
+                        <div className={`w-6 h-6 border flex items-center justify-center mr-4 transition-colors ${poll.allowMultipleVotes ? 'rounded' : 'rounded-full'} ${
+                          isActiveSelection ? 'border-primary bg-primary text-white' : 'border-gray-300 dark:border-gray-600 text-transparent'
                         }`}>
                           <CheckCircle className="w-4 h-4" />
                         </div>
-                        <span className={`font-medium text-lg ${isSelected ? 'text-primary dark:text-indigo-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                        <span className={`font-medium text-lg ${isActiveSelection ? 'text-primary dark:text-indigo-400' : 'text-gray-700 dark:text-gray-300'}`}>
                           {option.text}
                         </span>
                       </div>
                       
-                      {(userVote || isExpired) && (
+                      {(hasVoted || isExpired) && (
                         <div className="text-right">
                           <span className="block font-bold text-gray-900 dark:text-white">{percentage}%</span>
                           <span className="text-xs text-gray-500 dark:text-gray-400">{option.votes} votes</span>
@@ -232,7 +249,19 @@ const PollView: React.FC = () => {
               })}
             </div>
 
-            {userVote && (
+            {poll.allowMultipleVotes && !hasVoted && !isExpired && selectedOptions.length > 0 && (
+              <div className="mt-6">
+                <button
+                  onClick={() => submitVotes(selectedOptions)}
+                  className="w-full py-3 bg-primary hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg transition-colors flex items-center justify-center"
+                >
+                  <Send className="w-5 h-5 mr-2" />
+                  Submit Vote
+                </button>
+              </div>
+            )}
+
+            {hasVoted && (
                <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg flex items-center justify-center animate-fade-in transition-colors duration-200">
                   <CheckCircle className="w-5 h-5 mr-2" />
                   <span>Thanks for voting! Results are updated in real-time.</span>

@@ -57,7 +57,7 @@ async function startServer() {
     socket.emit("initial_state", polls);
 
     // Handle vote
-    socket.on("vote_poll", (data: { pollId: string, optionId: string }) => {
+    socket.on("vote_poll", (data: { pollId: string, optionId: string | string[] }) => {
       const { pollId, optionId } = data;
       const pollIndex = polls.findIndex(p => p.id === pollId);
       
@@ -66,11 +66,18 @@ async function startServer() {
         const isExpired = poll.expiresAt ? Date.now() > poll.expiresAt : false;
         
         if (!isExpired) {
-          const optionIndex = poll.options.findIndex(o => o.id === optionId);
-          if (optionIndex !== -1) {
-            poll.options[optionIndex].votes += 1;
+          const options = Array.isArray(optionId) ? optionId : [optionId];
+          let updated = false;
+          options.forEach(optId => {
+            const optionIndex = poll.options.findIndex(o => o.id === optId);
+            if (optionIndex !== -1) {
+              poll.options[optionIndex].votes += 1;
+              updated = true;
+            }
+          });
+          
+          if (updated) {
             poll.totalVotes += 1;
-            
             // Broadcast to all clients including the sender
             io.emit("poll_voted", { pollId, optionId, poll });
           }

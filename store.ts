@@ -22,7 +22,7 @@ const loadUserVotes = () => {
   }
 };
 
-const saveUserVotes = (votes: Record<string, string>) => {
+const saveUserVotes = (votes: Record<string, string | string[]>) => {
   try {
     localStorage.setItem('voxpopuli_user_votes', JSON.stringify(votes));
   } catch {}
@@ -45,7 +45,7 @@ const pollsSlice = createSlice({
         state.polls.unshift(action.payload);
       }
     },
-    pollVoted: (state, action: PayloadAction<{ pollId: string; optionId: string; poll: Poll }>) => {
+    pollVoted: (state, action: PayloadAction<{ pollId: string; optionId: string | string[]; poll: Poll }>) => {
       const { pollId, poll } = action.payload;
       const index = state.polls.findIndex(p => p.id === pollId);
       if (index !== -1) {
@@ -61,7 +61,7 @@ const pollsSlice = createSlice({
     pollDeleted: (state, action: PayloadAction<string>) => {
       state.polls = state.polls.filter(p => p.id !== action.payload);
     },
-    recordUserVote: (state, action: PayloadAction<{ pollId: string; optionId: string }>) => {
+    recordUserVote: (state, action: PayloadAction<{ pollId: string; optionId: string | string[] }>) => {
       state.userVotes[action.payload.pollId] = action.payload.optionId;
       saveUserVotes(state.userVotes);
     },
@@ -89,7 +89,7 @@ socket.on('poll_created', (poll: Poll) => {
   store.dispatch(pollCreated(poll));
 });
 
-socket.on('poll_voted', (data: { pollId: string; optionId: string; poll: Poll }) => {
+socket.on('poll_voted', (data: { pollId: string; optionId: string | string[]; poll: Poll }) => {
   store.dispatch(pollVoted(data));
 });
 
@@ -106,7 +106,7 @@ export const createPollEvent = (poll: Poll) => {
   socket.emit('create_poll', poll);
 };
 
-export const votePollEvent = (pollId: string, optionId: string) => {
+export const votePollEvent = (pollId: string, optionId: string | string[]) => {
   // First record it locally so UI updates instantly and prevents multiple clicks
   store.dispatch(recordUserVote({ pollId, optionId }));
   socket.emit('vote_poll', { pollId, optionId });

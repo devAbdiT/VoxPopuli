@@ -23,6 +23,7 @@ export interface Poll {
   comments?: Comment[];
   expiresAt?: number;
   isPrivate?: boolean;
+  allowMultipleVotes?: boolean;
 }
 
 export interface PollCreationData {
@@ -31,11 +32,12 @@ export interface PollCreationData {
   description: string;
   expiresAt?: number;
   isPrivate?: boolean;
+  allowMultipleVotes?: boolean;
 }
 
 export interface AppState {
   polls: Poll[];
-  userVotes: Record<string, string>; // pollId -> optionId mapping
+  userVotes: Record<string, string | string[]>; // pollId -> optionId(s) mapping
   loading: boolean;
   error: string | null;
 }

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, votePollEvent, deletePollEvent, addCommentEvent } from '../store';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
-import { ArrowLeft, CheckCircle, Trash2, Share2, Info, Copy, MessageSquare, Send, BadgeCheck, Lock, QrCode, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Trash2, Share2, Info, Copy, MessageSquare, Send, BadgeCheck, Lock, QrCode, X, Code } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
 import confetti from 'canvas-confetti';
@@ -37,6 +37,7 @@ const PollView: React.FC = () => {
   const allUserVotes = useSelector((state: RootState) => state.userVotes);
   const loading = useSelector((state: RootState) => state.loading);
   const [copied, setCopied] = useState(false);
+  const [embedCopied, setEmbedCopied] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [showQRModal, setShowQRModal] = useState(false);
   const [authorName, setAuthorName] = useState('');
@@ -49,6 +50,17 @@ const PollView: React.FC = () => {
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy link', err);
+    }
+  };
+
+  const handleCopyEmbed = async () => {
+    try {
+      const embedCode = `<iframe src="${window.location.origin}/poll/${poll?.id}" width="100%" height="600" frameborder="0" style="border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);"></iframe>`;
+      await navigator.clipboard.writeText(embedCode);
+      setEmbedCopied(true);
+      setTimeout(() => setEmbedCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy embed code', err);
     }
   };
 
@@ -304,7 +316,7 @@ const PollView: React.FC = () => {
                    className="flex items-center hover:text-primary transition-colors"
                  >
                     <QrCode className="w-4 h-4 mr-1" />
-                    Share QR
+                    Share / Embed
                  </button>
                  <button 
                    onClick={handleShare}
@@ -465,7 +477,7 @@ const PollView: React.FC = () => {
         </div>
       </div>
 
-      {/* QR Code Modal */}
+      {/* Share / Embed Modal */}
       <AnimatePresence>
         {showQRModal && (
           <motion.div
@@ -480,7 +492,7 @@ const PollView: React.FC = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-sm w-full shadow-2xl relative flex flex-col items-center border border-gray-100 dark:border-gray-700"
+              className="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative border border-gray-100 dark:border-gray-700"
             >
               <button 
                 onClick={() => setShowQRModal(false)}
@@ -489,16 +501,47 @@ const PollView: React.FC = () => {
                 <X className="w-5 h-5" />
               </button>
               
-              <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 text-primary rounded-full flex items-center justify-center mb-4">
-                <QrCode className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 text-center">Scan to Vote</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-8">
-                Point your camera at this QR code to open the poll on your device.
-              </p>
-              
-              <div className="bg-white p-4 rounded-xl shadow-inner border border-gray-100 flex items-center justify-center">
-                <QRCodeSVG value={`${window.location.origin}/poll/${poll.id}`} size={200} />
+              <div className="flex flex-col md:flex-row gap-8 items-center">
+                <div className="flex flex-col items-center flex-1">
+                  <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 text-primary rounded-full flex items-center justify-center mb-4">
+                    <QrCode className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 text-center">Scan to Vote</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-4">
+                    Point your camera at this QR to open on your device.
+                  </p>
+                  
+                  <div className="bg-white p-4 rounded-xl shadow-inner border border-gray-100 flex items-center justify-center">
+                    <QRCodeSVG value={`${window.location.origin}/poll/${poll.id}`} size={160} />
+                  </div>
+                </div>
+
+                <div className="hidden md:block w-px h-48 bg-gray-200 dark:bg-gray-700"></div>
+
+                <div className="flex flex-col items-center flex-1 w-full">
+                  <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 text-primary rounded-full flex items-center justify-center mb-4">
+                    <Code className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 text-center">Embed Poll</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-4">
+                    Add this poll to your own website or Notion page.
+                  </p>
+
+                  <div className="w-full bg-gray-50 dark:bg-gray-900 rounded-xl p-3 border border-gray-200 dark:border-gray-700 relative group overflow-hidden">
+                    <pre className="text-xs text-gray-600 dark:text-gray-400 overflow-x-auto whitespace-pre-wrap font-mono break-all line-clamp-3">
+                      {`<iframe src="${window.location.origin}/poll/${poll.id}" width="100%" height="600" frameborder="0"></iframe>`}
+                    </pre>
+                    <button
+                      onClick={handleCopyEmbed}
+                      className="absolute inset-0 bg-black/5 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                    >
+                      <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-1.5 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 font-medium text-sm flex items-center">
+                        {embedCopied ? <CheckCircle className="w-4 h-4 mr-1.5 text-green-500" /> : <Copy className="w-4 h-4 mr-1.5" />}
+                        {embedCopied ? 'Copied!' : 'Copy Snippet'}
+                      </div>
+                    </button>
+                  </div>
+                </div>
               </div>
             </motion.div>
           </motion.div>

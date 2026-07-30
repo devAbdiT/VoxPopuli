@@ -24,6 +24,7 @@ export interface Poll {
   expiresAt?: number;
   isPrivate?: boolean;
   allowMultipleVotes?: boolean;
+  hideResultsUntilClosed?: boolean;
   theme?: {
     accentColor?: string;
     backgroundImage?: string;
@@ -37,6 +38,7 @@ export interface PollCreationData {
   expiresAt?: number;
   isPrivate?: boolean;
   allowMultipleVotes?: boolean;
+  hideResultsUntilClosed?: boolean;
   theme?: {
     accentColor?: string;
     backgroundImage?: string;

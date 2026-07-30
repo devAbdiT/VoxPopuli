@@ -83,6 +83,8 @@ const PollView: React.FC = () => {
 
   const isExpired = poll.expiresAt ? Date.now() > poll.expiresAt : false;
   const hasVoted = Array.isArray(userVote) ? userVote.length > 0 : !!userVote;
+  const isResultsHidden = poll.hideResultsUntilClosed && !isExpired;
+  const showResults = (hasVoted || isExpired) && !isResultsHidden;
 
   const handleVoteClick = (optionId: string) => {
     if (hasVoted || isExpired) return;
@@ -249,8 +251,8 @@ const PollView: React.FC = () => {
                             : 'border-gray-100 dark:border-gray-700 hover:border-primary dark:hover:border-primary hover:shadow-md bg-white dark:bg-gray-800'
                     }`}
                   >
-                    {/* Progress Bar Background (only if voted or expired) */}
-                    {(hasVoted || isExpired) && (
+                    {/* Progress Bar Background (only if voted or expired and not hidden) */}
+                    {showResults && (
                       <div 
                         className="absolute left-0 top-0 bottom-0 bg-indigo-100 dark:bg-indigo-900/40 transition-all duration-1000 ease-out"
                         style={{ width: `${percentage}%`, opacity: 0.5 }}
@@ -269,7 +271,7 @@ const PollView: React.FC = () => {
                         </span>
                       </div>
                       
-                      {(hasVoted || isExpired) && (
+                      {showResults && (
                         <div className="text-right">
                           <span className="block font-bold text-gray-900 dark:text-white">{percentage}%</span>
                           <span className="text-xs text-gray-500 dark:text-gray-400">{option.votes} votes</span>
@@ -296,7 +298,11 @@ const PollView: React.FC = () => {
             {hasVoted && (
                <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg flex items-center justify-center animate-fade-in transition-colors duration-200">
                   <CheckCircle className="w-5 h-5 mr-2" />
-                  <span>Thanks for voting! Results are updated in real-time.</span>
+                  <span>
+                    {isResultsHidden 
+                      ? "Thanks for voting! Results will be revealed when the poll closes." 
+                      : "Thanks for voting! Results are updated in real-time."}
+                  </span>
                </div>
             )}
             
@@ -335,75 +341,87 @@ const PollView: React.FC = () => {
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-8 h-full flex flex-col transition-colors duration-200">
             <h3 className="text-2xl font-display font-bold text-gray-900 dark:text-white mb-6 flex items-center transition-colors duration-200">
                Live Results
-               {totalVotes === 0 && <span className="ml-2 text-sm font-normal text-gray-400 dark:text-gray-500">(No votes yet)</span>}
+               {totalVotes === 0 && !isResultsHidden && <span className="ml-2 text-sm font-normal text-gray-400 dark:text-gray-500">(No votes yet)</span>}
             </h3>
             
-            <div className="flex-grow min-h-[300px]">
-               {totalVotes > 0 ? (
-                 <ResponsiveContainer width="100%" height="100%">
-                   <BarChart
-                     data={chartData}
-                     layout="vertical"
-                     margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                   >
-                     <XAxis type="number" hide />
-                     <YAxis 
-                        dataKey="name" 
-                        type="category" 
-                        width={100} 
-                        tick={{fill: '#6b7280', fontSize: 12}}
-                        axisLine={false}
-                        tickLine={false}
-                     />
-                     <Tooltip content={<CustomTooltip />} cursor={{fill: '#f3f4f6', radius: 8}} />
-                     <Bar dataKey="votes" shape={<CustomBar />} barSize={32} isAnimationActive={false}>
-                        {chartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                     </Bar>
-                   </BarChart>
-                 </ResponsiveContainer>
-               ) : (
-                   <div className="h-full flex flex-col items-center justify-center text-gray-300 dark:text-gray-600">
-                       <div className="w-24 h-24 rounded-full bg-gray-50 dark:bg-gray-700/50 flex items-center justify-center mb-4 transition-colors duration-200">
-                           <BarChart className="w-10 h-10 text-gray-300 dark:text-gray-500" />
-                       </div>
-                       <p>Waiting for the first vote...</p>
+            {isResultsHidden ? (
+               <div className="flex-grow flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 min-h-[300px]">
+                   <div className="w-24 h-24 rounded-full bg-gray-50 dark:bg-gray-700/50 flex items-center justify-center mb-4 transition-colors duration-200">
+                       <Lock className="w-10 h-10 text-gray-300 dark:text-gray-500" />
                    </div>
-               )}
-            </div>
+                   <p className="text-center font-medium">Results are hidden.</p>
+                   <p className="text-center text-sm mt-2 opacity-80">Check back after the poll closes to see how everyone voted!</p>
+               </div>
+            ) : (
+              <>
+                <div className="flex-grow min-h-[300px]">
+                   {totalVotes > 0 ? (
+                     <ResponsiveContainer width="100%" height="100%">
+                       <BarChart
+                         data={chartData}
+                         layout="vertical"
+                         margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                       >
+                         <XAxis type="number" hide />
+                         <YAxis 
+                            dataKey="name" 
+                            type="category" 
+                            width={100} 
+                            tick={{fill: '#6b7280', fontSize: 12}}
+                            axisLine={false}
+                            tickLine={false}
+                         />
+                         <Tooltip content={<CustomTooltip />} cursor={{fill: '#f3f4f6', radius: 8}} />
+                         <Bar dataKey="votes" shape={<CustomBar />} barSize={32} isAnimationActive={false}>
+                            {chartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                         </Bar>
+                       </BarChart>
+                     </ResponsiveContainer>
+                   ) : (
+                       <div className="h-full flex flex-col items-center justify-center text-gray-300 dark:text-gray-600">
+                           <div className="w-24 h-24 rounded-full bg-gray-50 dark:bg-gray-700/50 flex items-center justify-center mb-4 transition-colors duration-200">
+                               <BarChart className="w-10 h-10 text-gray-300 dark:text-gray-500" />
+                           </div>
+                           <p>Waiting for the first vote...</p>
+                       </div>
+                   )}
+                </div>
 
-             {/* Secondary Viz: Pie Chart (Small) */}
-             {totalVotes > 0 && (
-                 <div className="mt-8 pt-8 border-t border-gray-100 dark:border-gray-700 transition-colors duration-200">
-                    <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-4 uppercase tracking-wider">Distribution</h4>
-                    <div className="h-48 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={chartData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={40}
-                                    outerRadius={70}
-                                    paddingAngle={5}
-                                    dataKey="votes"
-                                    isAnimationActive={false}
-                                >
-                                    {chartData.map((entry, index) => (
-                                        <Cell 
-                                          key={`cell-${index}`} 
-                                          fill={COLORS[index % COLORS.length]} 
-                                          style={{ transition: 'all 0.5s ease-in-out' }}
-                                        />
-                                    ))}
-                                </Pie>
-                                <Tooltip />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                 </div>
-             )}
+                 {/* Secondary Viz: Pie Chart (Small) */}
+                 {totalVotes > 0 && (
+                     <div className="mt-8 pt-8 border-t border-gray-100 dark:border-gray-700 transition-colors duration-200">
+                        <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-4 uppercase tracking-wider">Distribution</h4>
+                        <div className="h-48 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={chartData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={40}
+                                        outerRadius={70}
+                                        paddingAngle={5}
+                                        dataKey="votes"
+                                        isAnimationActive={false}
+                                    >
+                                        {chartData.map((entry, index) => (
+                                            <Cell 
+                                              key={`cell-${index}`} 
+                                              fill={COLORS[index % COLORS.length]} 
+                                              style={{ transition: 'all 0.5s ease-in-out' }}
+                                            />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                     </div>
+                 )}
+              </>
+            )}
           </div>
         </div>
       </div>

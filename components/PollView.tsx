@@ -15,14 +15,15 @@ const CustomBar = (props: any) => {
   const { fill, x, y, width, height } = props;
   
   return (
-    <rect
+    <motion.rect
       x={x}
       y={y}
       height={height}
       fill={fill}
-      width={width > 0 ? width : 0}
+      initial={{ width: 0 }}
+      animate={{ width: width > 0 ? width : 0 }}
+      transition={{ duration: 0.8, type: "spring", bounce: 0.2 }}
       rx={4}
-      style={{ transition: 'all 0.5s ease-in-out' }}
     />
   );
 };
@@ -253,9 +254,11 @@ const PollView: React.FC = () => {
                   >
                     {/* Progress Bar Background (only if voted or expired and not hidden) */}
                     {showResults && (
-                      <div 
-                        className="absolute left-0 top-0 bottom-0 bg-indigo-100 dark:bg-indigo-900/40 transition-all duration-1000 ease-out"
-                        style={{ width: `${percentage}%`, opacity: 0.5 }}
+                      <motion.div 
+                        className="absolute left-0 top-0 bottom-0 bg-indigo-100 dark:bg-indigo-900/40"
+                        initial={{ width: 0, opacity: 0.5 }}
+                        animate={{ width: `${percentage}%` }}
+                        transition={{ duration: 0.8, type: "spring", bounce: 0.2 }}
                       />
                     )}
                     

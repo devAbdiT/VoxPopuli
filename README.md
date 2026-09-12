@@ -1,4 +1,4 @@
-# VoxPopuli - Live Polling
+# Live Polling
 
 An interactive, real-time polling platform featuring live data visualization, Redux state management, and seamless real-time syncing. 
 

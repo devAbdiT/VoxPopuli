@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { Link } from 'react-router-dom';
 import { Poll, PollCategory } from '../types';
-import { BarChart2, Clock, Users, ChevronRight, Search } from 'lucide-react';
+import { BarChart2, Clock, Users, ChevronRight, Search, SearchX, ClipboardList } from 'lucide-react';
 import { motion } from 'motion/react';
 
 const containerVariants = {
@@ -115,10 +115,37 @@ const PollList: React.FC = () => {
       </div>
 
       {sortedPolls.length === 0 ? (
-        <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-600 transition-colors duration-200">
-          <BarChart2 className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-500 dark:text-gray-400 text-lg">No polls found in this category.</p>
-        </div>
+        searchQuery.length > 0 ? (
+          <div className="text-center py-20 bg-white/50 dark:bg-gray-800/50 rounded-3xl border border-dashed border-gray-200 dark:border-gray-700 transition-colors duration-200 backdrop-blur-sm shadow-sm">
+            <div className="bg-gray-100 dark:bg-gray-700/50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <SearchX className="w-10 h-10 text-gray-400 dark:text-gray-500" />
+            </div>
+            <h3 className="text-xl font-display font-semibold text-gray-900 dark:text-white mb-2">No polls found</h3>
+            <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+              We couldn't find any polls matching "{searchQuery}". Try adjusting your search or filters.
+            </p>
+          </div>
+        ) : (
+          <div className="text-center py-24 bg-white/50 dark:bg-gray-800/50 rounded-3xl border border-dashed border-gray-200 dark:border-gray-700 transition-colors duration-200 backdrop-blur-sm shadow-sm">
+            <div className="bg-primary/10 dark:bg-primary/20 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+              <div className="absolute inset-0 bg-primary/5 dark:bg-primary/10 rounded-full animate-ping opacity-75"></div>
+              <ClipboardList className="w-12 h-12 text-primary relative z-10" />
+            </div>
+            <h3 className="text-2xl font-display font-bold text-gray-900 dark:text-white mb-3">No active polls yet</h3>
+            <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-8 text-lg">
+              {filter !== 'All' 
+                ? `There are currently no active polls in the ${filter} category. Check back later or start your own!`
+                : "It's quiet here. Be the first to spark a conversation by creating a new poll for the community."}
+            </p>
+            <Link 
+              to="/create" 
+              className="inline-flex items-center px-6 py-3 bg-primary text-white font-medium rounded-full hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30"
+            >
+              <BarChart2 className="w-5 h-5 mr-2" />
+              Create Your First Poll
+            </Link>
+          </div>
+        )
       ) : (
         <motion.div 
           variants={containerVariants}

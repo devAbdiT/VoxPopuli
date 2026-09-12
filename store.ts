@@ -15,7 +15,7 @@ const initialState: AppState = {
 // Local storage for user votes to prevent double voting after refresh
 const loadUserVotes = () => {
   try {
-    const saved = localStorage.getItem('voxpopuli_user_votes');
+    const saved = localStorage.getItem('pulse_user_votes');
     return saved ? JSON.parse(saved) : {};
   } catch {
     return {};
@@ -24,7 +24,7 @@ const loadUserVotes = () => {
 
 const saveUserVotes = (votes: Record<string, string | string[]>) => {
   try {
-    localStorage.setItem('voxpopuli_user_votes', JSON.stringify(votes));
+    localStorage.setItem('pulse_user_votes', JSON.stringify(votes));
   } catch {}
 };
 

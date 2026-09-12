@@ -1,10 +1,10 @@
-# Live Polling
+# Pulse - Live Polling
 
 An interactive, real-time polling platform featuring live data visualization, Redux state management, and seamless real-time syncing. 
 
 ## Features
 
-- **Live Polling**: Create dynamic polls with real-time feedback and visualization.
+- **Pulse - Live Polling**: Create dynamic polls with real-time feedback and visualization.
 - **Rich Data Visualizations**: Enjoy beautiful, responsive charts (Bar, Pie) via Recharts.
 - **Custom Theming**: Personalize each poll with custom accent colors and background images.
 - **Sharing & Embedding**: Easily share polls using built-in QR codes, direct links, or generate iframe embed codes to add polls to your own website or Notion pages.

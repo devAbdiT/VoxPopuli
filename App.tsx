@@ -53,7 +53,7 @@ const App: React.FC = () => {
         <footer className="backdrop-blur-md bg-white/70 dark:bg-gray-800/70 border-t border-gray-200/50 dark:border-gray-700/50 mt-auto transition-colors duration-500">
           <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             <p className="text-center text-sm text-gray-400 dark:text-gray-500">
-              &copy; 2024 Live Polling. Powered by React, Redux & Gemini.
+              &copy; 2026 Pulse. Powered by React & Redux.
             </p>
           </div>
         </footer>

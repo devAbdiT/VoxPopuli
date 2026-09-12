@@ -11,7 +11,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    const savedTheme = localStorage.getItem('voxpopuli_theme');
+    const savedTheme = localStorage.getItem('pulse_theme');
     if (savedTheme === 'dark' || savedTheme === 'light') return savedTheme;
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       return 'dark';
@@ -20,7 +20,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   useEffect(() => {
-    localStorage.setItem('voxpopuli_theme', theme);
+    localStorage.setItem('pulse_theme', theme);
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {

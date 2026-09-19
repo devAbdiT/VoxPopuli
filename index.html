@@ -4,20 +4,44 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pulse - Live Polling</title>
+    <meta name="description" content="An interactive, real-time polling platform featuring live data visualization and real-time syncing." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
         darkMode: 'class',
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              display: ['Space Grotesk', 'sans-serif'],
+              sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+              display: ['Outfit', 'system-ui', '-apple-system', 'sans-serif'],
             },
             colors: {
-              primary: '#4f46e5',
+              primary: {
+                DEFAULT: '#6366f1',
+                50: '#eef2ff',
+                100: '#e0e7ff',
+                200: '#c7d2fe',
+                300: '#a5b4fc',
+                400: '#818cf8',
+                500: '#6366f1',
+                600: '#4f46e5',
+                700: '#4338ca',
+                800: '#3730a3',
+                900: '#312e81',
+              },
               secondary: '#10b981',
+              dark: {
+                bg: '#0a0e17',
+                card: '#111726',
+                border: '#1e293b'
+              }
+            },
+            boxShadow: {
+              'glow': '0 0 20px -5px rgba(99, 102, 241, 0.3)',
+              'glow-lg': '0 0 35px -5px rgba(99, 102, 241, 0.4)',
             }
           }
         }
@@ -25,13 +49,40 @@
     </script>
     <style>
       body {
-        font-family: 'Inter', sans-serif;
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      ::selection {
+        background-color: #c7d2fe;
+        color: #312e81;
+      }
+      .dark ::selection {
+        background-color: #3730a3;
+        color: #e0e7ff;
+      }
+      /* Custom fine scrollbars */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(156, 163, 175, 0.4);
+        border-radius: 9999px;
+      }
+      .dark ::-webkit-scrollbar-thumb {
+        background: rgba(75, 85, 99, 0.4);
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(156, 163, 175, 0.6);
       }
     </style>
-  <link rel="stylesheet" href="/index.css">
-</head>
-  <body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+  </head>
+  <body class="bg-slate-50 dark:bg-[#0a0e17] text-slate-900 dark:text-slate-100 min-h-screen antialiased transition-colors duration-200">
     <div id="root"></div>
-  <script type="module" src="/index.tsx"></script>
-</body>
+    <script type="module" src="/index.tsx"></script>
+  </body>
 </html>

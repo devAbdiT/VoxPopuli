@@ -4,10 +4,41 @@ import { useNavigate } from 'react-router-dom';
 import { createPollEvent } from '../store';
 import { generatePollContent } from '../services/geminiService';
 import { PollCategory } from '../types';
-import { Sparkles, Plus, Trash2, Loader2, Save, ArrowLeft } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid'; // We will use a simple random string generator instead of uuid package to save imports if needed, but standard library usage implies best effort. I'll use Math.random for simplicity in this constrained env.
+import { 
+  Sparkles, 
+  Plus, 
+  Trash2, 
+  Loader2, 
+  Save, 
+  ArrowLeft, 
+  Eye, 
+  Settings2, 
+  Palette, 
+  HelpCircle,
+  Clock,
+  Layers,
+  CheckCircle2,
+  Lock,
+  ListFilter
+} from 'lucide-react';
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
+
+const PRESET_COLORS = [
+  { name: 'Indigo', value: '#6366f1' },
+  { name: 'Emerald', value: '#10b981' },
+  { name: 'Violet', value: '#8b5cf6' },
+  { name: 'Rose', value: '#f43f5e' },
+  { name: 'Amber', value: '#f59e0b' },
+  { name: 'Sky', value: '#0ea5e9' },
+];
+
+const SUGGESTED_TOPICS = [
+  'Web Frameworks in 2026',
+  'Remote vs Hybrid Work',
+  'Coffee vs Matcha',
+  'AI Productivity Tools'
+];
 
 const CreatePoll: React.FC = () => {
   const dispatch = useDispatch();
@@ -23,17 +54,22 @@ const CreatePoll: React.FC = () => {
   const [isPrivate, setIsPrivate] = useState<boolean>(false);
   const [allowMultipleVotes, setAllowMultipleVotes] = useState<boolean>(false);
   const [hideResultsUntilClosed, setHideResultsUntilClosed] = useState<boolean>(false);
-  const [accentColor, setAccentColor] = useState<string>('#4f46e5'); // Default primary (indigo-600)
+  const [accentColor, setAccentColor] = useState<string>('#6366f1');
   const [backgroundImage, setBackgroundImage] = useState<string>('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [previewMode, setPreviewMode] = useState<boolean>(false);
 
   const handleAddOption = () => {
-    setOptions([...options, '']);
+    if (options.length < 8) {
+      setOptions([...options, '']);
+    }
   };
 
   const handleRemoveOption = (index: number) => {
-    const newOptions = options.filter((_, i) => i !== index);
-    setOptions(newOptions);
+    if (options.length > 2) {
+      const newOptions = options.filter((_, i) => i !== index);
+      setOptions(newOptions);
+    }
   };
 
   const handleOptionChange = (index: number, value: string) => {
@@ -42,21 +78,23 @@ const CreatePoll: React.FC = () => {
     setOptions(newOptions);
   };
 
-  const handleGenerateAI = async () => {
-    if (!topic.trim()) {
-      setErrors({ topic: 'Please enter a topic first' });
+  const handleGenerateAI = async (selectedTopic?: string) => {
+    const queryTopic = selectedTopic || topic;
+    if (!queryTopic.trim()) {
+      setErrors({ topic: 'Please enter or select a topic first' });
       return;
     }
     setIsGenerating(true);
     setErrors({});
+    if (selectedTopic) setTopic(selectedTopic);
     
     try {
-      const data = await generatePollContent(topic);
+      const data = await generatePollContent(queryTopic);
       setQuestion(data.question);
       setDescription(data.description);
       setOptions(data.options);
     } catch (error) {
-      setErrors({ ai: 'Failed to generate content. Please try again.' });
+      setErrors({ ai: 'Failed to generate content. You can write your question manually.' });
     } finally {
       setIsGenerating(false);
     }
@@ -65,7 +103,7 @@ const CreatePoll: React.FC = () => {
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!question.trim()) newErrors.question = 'Question is required';
-    if (options.some(o => !o.trim())) newErrors.options = 'All options must be filled';
+    if (options.some(o => !o.trim())) newErrors.options = 'All option fields must have text';
     if (options.length < 2) newErrors.options = 'At least 2 options are required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -85,8 +123,8 @@ const CreatePoll: React.FC = () => {
 
     const newPoll = {
       id: generateId(),
-      question,
-      description,
+      question: question.trim(),
+      description: description.trim(),
       category,
       createdAt: Date.now(),
       totalVotes: 0,
@@ -95,12 +133,12 @@ const CreatePoll: React.FC = () => {
       allowMultipleVotes,
       hideResultsUntilClosed,
       theme: {
-        accentColor: accentColor !== '#4f46e5' ? accentColor : undefined,
+        accentColor: accentColor !== '#6366f1' ? accentColor : undefined,
         backgroundImage: backgroundImage.trim() !== '' ? backgroundImage.trim() : undefined,
       },
       options: options.map(text => ({
         id: generateId(),
-        text,
+        text: text.trim(),
         votes: 0
       }))
     };
@@ -110,254 +148,379 @@ const CreatePoll: React.FC = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <button 
-        onClick={() => navigate('/')}
-        className="flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white mb-6 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to Dashboard
-      </button>
+    <div className="max-w-3xl mx-auto space-y-6">
+      {/* Header & Back Button */}
+      <div className="flex items-center justify-between">
+        <button 
+          onClick={() => navigate('/')}
+          className="inline-flex items-center text-sm font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4 mr-1.5" />
+          Back to Polls
+        </button>
 
-      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-8 transition-colors duration-200">
-        <div className="mb-8 border-b border-gray-100 dark:border-gray-700/50 pb-6">
-          <h2 className="text-3xl font-display font-bold text-gray-900 dark:text-white mb-2">Create New Poll</h2>
-          <p className="text-gray-500 dark:text-gray-400">Design your poll manually or use AI to spark ideas.</p>
+        {/* Live Preview Toggle Button */}
+        <button
+          type="button"
+          onClick={() => setPreviewMode(!previewMode)}
+          className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+            previewMode 
+              ? 'bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-300 border-primary-200 dark:border-primary-800' 
+              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+          }`}
+        >
+          <Eye className="w-3.5 h-3.5" />
+          <span>{previewMode ? 'Hide Preview' : 'Live Preview'}</span>
+        </button>
+      </div>
+
+      {/* Main Container */}
+      <div className="bg-white dark:bg-slate-900/90 rounded-3xl shadow-xl shadow-slate-900/5 border border-slate-200/80 dark:border-slate-800/80 p-6 sm:p-8 transition-colors">
+        <div className="mb-6 border-b border-slate-100 dark:border-slate-800 pb-5">
+          <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-slate-900 dark:text-white tracking-tight">
+            Create a New Poll
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Publish an engaging ballot with real-time analytics and customizable options.
+          </p>
         </div>
 
-        {/* AI Section */}
-        <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-6 mb-8 border border-indigo-100 dark:border-indigo-800/30 transition-colors duration-200">
-          <div className="flex flex-col md:flex-row gap-4 items-end">
-            <div className="flex-grow w-full">
-              <label className="block text-sm font-semibold text-indigo-900 dark:text-indigo-300 mb-2">
-                Generate with AI
-              </label>
-              <div className="relative">
-                <input
-                    type="text"
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                    placeholder="e.g., Future of Remote Work"
-                    className="w-full pl-4 pr-4 py-3 bg-white dark:bg-gray-700 border border-indigo-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white dark:placeholder-gray-400 transition-all"
-                />
-                <Sparkles className="absolute right-3 top-3.5 w-5 h-5 text-indigo-400" />
-              </div>
-              {errors.topic && <p className="text-red-500 text-xs mt-1">{errors.topic}</p>}
-              {errors.ai && <p className="text-red-500 text-xs mt-1">{errors.ai}</p>}
+        {/* AI Generator Section */}
+        <div className="bg-gradient-to-br from-indigo-500/5 via-primary-500/5 to-purple-500/5 dark:from-indigo-950/30 dark:to-slate-900/50 rounded-2xl p-5 mb-8 border border-primary-100 dark:border-primary-900/30">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-1.5 rounded-lg bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <span className="text-xs font-bold uppercase tracking-wider text-primary-700 dark:text-primary-300">
+              Instant AI Assistant
+            </span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch">
+            <div className="flex-grow relative">
+              <input
+                type="text"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleGenerateAI())}
+                placeholder="Enter any topic or question idea..."
+                className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm placeholder:text-slate-400 focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 dark:text-white transition-all"
+              />
             </div>
             <button
               type="button"
-              onClick={handleGenerateAI}
+              onClick={() => handleGenerateAI()}
               disabled={isGenerating}
-              className="w-full md:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg flex items-center justify-center transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
+              className="px-5 py-2.5 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-xl flex items-center justify-center transition-all disabled:opacity-60 shadow-sm shrink-0"
             >
               {isGenerating ? (
                 <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Generating...
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-5 h-5 mr-2" />
-                  Generate
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Generate with AI
                 </>
               )}
             </button>
           </div>
+
+          {/* Quick topic suggestion pills */}
+          <div className="mt-3 flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 mr-1 font-medium">Try:</span>
+            {SUGGESTED_TOPICS.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => handleGenerateAI(t)}
+                className="text-[11px] px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-primary-50 dark:hover:bg-primary-950/50 text-slate-600 dark:text-slate-300 hover:text-primary-600 border border-slate-200 dark:border-slate-700/80 transition-colors"
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+
+          {errors.topic && <p className="text-red-500 text-xs mt-2 font-medium">{errors.topic}</p>}
+          {errors.ai && <p className="text-amber-500 text-xs mt-2 font-medium">{errors.ai}</p>}
         </div>
 
+        {/* Real-Time Live Preview Modal / Card */}
+        {previewMode && (
+          <div className="mb-8 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-primary-200 dark:border-primary-800/40">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400 flex items-center gap-1.5">
+                <Eye className="w-3.5 h-3.5" />
+                Live Voter Preview
+              </span>
+              <span className="text-[11px] text-slate-400">What voters will see</span>
+            </div>
+            <div className="p-5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-600 border border-primary-200 dark:border-primary-800/50 uppercase">
+                  {category}
+                </span>
+                <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Live
+                </span>
+              </div>
+              <h3 className="text-base font-display font-bold text-slate-900 dark:text-white">
+                {question.trim() || 'Your poll question will appear here...'}
+              </h3>
+              {description.trim() && (
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {description}
+                </p>
+              )}
+              <div className="space-y-2 pt-2">
+                {options.map((opt, i) => (
+                  <div key={i} className="flex items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-200 font-medium">
+                    <span className="w-5 h-5 rounded-md bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold mr-2 text-slate-600 dark:text-slate-300">
+                      {String.fromCharCode(65 + i)}
+                    </span>
+                    <span>{opt.trim() || `Option ${i + 1}`}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Question */}
+          {/* Question Input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Poll Question <span className="text-red-500">*</span>
-            </label>
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                Poll Question <span className="text-red-500">*</span>
+              </label>
+              <span className="text-xs text-slate-400">
+                {question.length}/150
+              </span>
+            </div>
             <input
               type="text"
+              maxLength={150}
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              placeholder="What would you like to ask?"
-              className={`w-full px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border ${errors.question ? 'border-red-300 focus:ring-red-200' : 'border-gray-300 dark:border-gray-600 focus:ring-primary/20'} focus:border-primary dark:focus:border-primary focus:outline-none transition-all`}
+              placeholder="e.g. Which web framework do you prefer for production apps?"
+              className={`w-full px-4 py-3 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl border ${
+                errors.question 
+                  ? 'border-red-400 ring-2 ring-red-100 dark:ring-red-950/50' 
+                  : 'border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary-500/25 focus:border-primary-500'
+              } text-sm focus:outline-none transition-all shadow-sm`}
             />
-            {errors.question && <p className="text-red-500 text-xs mt-1">{errors.question}</p>}
+            {errors.question && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.question}</p>}
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Description (Optional)
+            <label className="block text-sm font-bold text-slate-800 dark:text-slate-200 mb-1.5">
+              Description / Background Context <span className="text-xs font-normal text-slate-400">(Optional)</span>
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add some context..."
-              rows={3}
-              className="w-full px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none transition-all resize-none"
+              placeholder="Provide background context or instructions for voters..."
+              rows={2}
+              className="w-full px-4 py-3 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary-500/25 focus:border-primary-500 focus:outline-none text-sm transition-all resize-none shadow-sm"
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Category */}
+          {/* Category & Expiry */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-bold text-slate-800 dark:text-slate-200 mb-1.5">
                 Category
               </label>
               <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-xl border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary-500/25 focus:border-primary-500 focus:outline-none text-sm font-medium transition-all shadow-sm cursor-pointer"
               >
-                  {Object.values(PollCategory).map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                  ))}
+                {Object.values(PollCategory).map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
               </select>
             </div>
 
-            {/* Expiry */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-bold text-slate-800 dark:text-slate-200 mb-1.5">
                 Poll Duration
               </label>
               <select
-                  value={expiry}
-                  onChange={(e) => setExpiry(e.target.value)}
-                  className="w-full px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none"
+                value={expiry}
+                onChange={(e) => setExpiry(e.target.value)}
+                className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-xl border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary-500/25 focus:border-primary-500 focus:outline-none text-sm font-medium transition-all shadow-sm cursor-pointer"
               >
-                  <option value="never">Never expires</option>
-                  <option value="1h">1 Hour</option>
-                  <option value="24h">24 Hours</option>
-                  <option value="7d">7 Days</option>
+                <option value="never">No Expiration (Always Active)</option>
+                <option value="1h">1 Hour</option>
+                <option value="24h">24 Hours</option>
+                <option value="7d">7 Days</option>
               </select>
             </div>
           </div>
 
-          {/* Privacy & Multiple Choice Toggles */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700/50">
-              <div>
-                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Unlisted Poll</h4>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Only people with the link can vote.</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
-                  checked={isPrivate}
-                  onChange={(e) => setIsPrivate(e.target.checked)}
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
-              </label>
-            </div>
-            
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700/50">
-              <div>
-                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Multiple Choice</h4>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Allow voters to select multiple options.</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
-                  checked={allowMultipleVotes}
-                  onChange={(e) => setAllowMultipleVotes(e.target.checked)}
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
-              </label>
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700/50">
-              <div>
-                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Hidden Results</h4>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Hide results until poll closes.</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
-                  checked={hideResultsUntilClosed}
-                  onChange={(e) => setHideResultsUntilClosed(e.target.checked)}
-                  disabled={expiry === 'never'}
-                />
-                <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary ${expiry === 'never' ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
-              </label>
-            </div>
-          </div>
-
-          {/* Custom Theme */}
-          <div className="bg-gray-50 dark:bg-gray-800/30 p-4 rounded-xl border border-gray-100 dark:border-gray-700/50">
-            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Custom Theming</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Accent Color</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={accentColor}
-                    onChange={(e) => setAccentColor(e.target.value)}
-                    className="w-10 h-10 rounded border-0 cursor-pointer bg-transparent p-0"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300 uppercase font-mono">{accentColor}</span>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Background Image URL</label>
-                <input
-                  type="text"
-                  value={backgroundImage}
-                  onChange={(e) => setBackgroundImage(e.target.value)}
-                  placeholder="https://example.com/image.jpg"
-                  className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded border border-gray-300 dark:border-gray-600 focus:border-primary focus:outline-none"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Options */}
+          {/* Voting Options */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Options <span className="text-red-500">*</span>
-            </label>
-            <div className="space-y-3">
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                Ballot Options <span className="text-red-500">*</span>
+              </label>
+              <span className="text-xs text-slate-400">
+                {options.length} options (max 8)
+              </span>
+            </div>
+
+            <div className="space-y-2.5">
               {options.map((option, index) => (
-                <div key={index} className="flex gap-2">
+                <div key={index} className="flex items-center gap-2">
+                  <span className="w-8 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold flex items-center justify-center shrink-0 border border-slate-200/80 dark:border-slate-700">
+                    {String.fromCharCode(65 + index)}
+                  </span>
                   <input
                     type="text"
                     value={option}
                     onChange={(e) => handleOptionChange(index, e.target.value)}
                     placeholder={`Option ${index + 1}`}
-                    className="flex-grow px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none transition-all"
+                    className="flex-grow px-4 py-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary-500/25 focus:border-primary-500 focus:outline-none text-sm transition-all shadow-sm"
                   />
                   {options.length > 2 && (
                     <button
                       type="button"
                       onClick={() => handleRemoveOption(index)}
-                      className="p-3 text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                      className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors shrink-0"
+                      aria-label="Remove option"
                     >
-                      <Trash2 className="w-5 h-5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   )}
                 </div>
               ))}
             </div>
-            {errors.options && <p className="text-red-500 text-xs mt-1">{errors.options}</p>}
-            
-            <button
-              type="button"
-              onClick={handleAddOption}
-              className="mt-3 text-sm font-medium text-primary hover:text-indigo-700 flex items-center transition-colors"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Add Option
-            </button>
+            {errors.options && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.options}</p>}
+
+            {options.length < 8 && (
+              <button
+                type="button"
+                onClick={handleAddOption}
+                className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-950/40 border border-dashed border-primary-300 dark:border-primary-800 transition-all"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Another Option
+              </button>
+            )}
           </div>
 
-          <div className="pt-6">
+          {/* Privacy & Voting Behavior Controls */}
+          <div className="space-y-3 pt-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              Poll Rules & Access
+            </span>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* Unlisted */}
+              <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/70 dark:border-slate-800">
+                <div className="pr-2">
+                  <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Unlisted Poll</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Only accessible via direct link.</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={isPrivate}
+                    onChange={(e) => setIsPrivate(e.target.checked)}
+                  />
+                  <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"></div>
+                </label>
+              </div>
+              
+              {/* Multiple Choice */}
+              <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/70 dark:border-slate-800">
+                <div className="pr-2">
+                  <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Multiple Choice</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Voters can pick multiple options.</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={allowMultipleVotes}
+                    onChange={(e) => setAllowMultipleVotes(e.target.checked)}
+                  />
+                  <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"></div>
+                </label>
+              </div>
+
+              {/* Hidden Results */}
+              <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/70 dark:border-slate-800">
+                <div className="pr-2">
+                  <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Blind Voting</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Results hidden until closed.</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={hideResultsUntilClosed}
+                    onChange={(e) => setHideResultsUntilClosed(e.target.checked)}
+                    disabled={expiry === 'never'}
+                  />
+                  <div className={`w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600 ${expiry === 'never' ? 'opacity-40 cursor-not-allowed' : ''}`}></div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Theme & Styling Section */}
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 space-y-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+              <Palette className="w-3.5 h-3.5" />
+              Theme & Presentation
+            </span>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Accent Color Palette</label>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                {PRESET_COLORS.map(c => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => setAccentColor(c.value)}
+                    className={`w-7 h-7 rounded-full transition-transform flex items-center justify-center ${
+                      accentColor === c.value ? 'ring-2 ring-offset-2 ring-primary-500 scale-110' : 'hover:scale-105'
+                    }`}
+                    style={{ backgroundColor: c.value }}
+                    title={c.name}
+                  >
+                    {accentColor === c.value && (
+                      <span className="w-2 h-2 rounded-full bg-white"></span>
+                    )}
+                  </button>
+                ))}
+                <div className="flex items-center gap-1 ml-2">
+                  <input
+                    type="color"
+                    value={accentColor}
+                    onChange={(e) => setAccentColor(e.target.value)}
+                    className="w-7 h-7 rounded-lg border-0 cursor-pointer bg-transparent p-0"
+                    title="Custom color"
+                  />
+                  <span className="text-xs font-mono uppercase text-slate-500">{accentColor}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <div className="pt-4">
             <button
               type="submit"
-              className="w-full py-4 bg-primary hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transform transition-all active:scale-[0.98] flex items-center justify-center"
+              className="w-full py-3.5 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-primary-500/25 hover:shadow-glow transform transition-all active:scale-[0.99] flex items-center justify-center gap-2 text-base"
             >
-              <Save className="w-5 h-5 mr-2" />
-              Create Poll
+              <Save className="w-5 h-5" />
+              <span>Publish Live Poll</span>
             </button>
           </div>
         </form>

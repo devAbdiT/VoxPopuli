@@ -1,15 +1,34 @@
 import React, { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState, votePollEvent, deletePollEvent, addCommentEvent } from '../store';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
-import { ArrowLeft, CheckCircle, Trash2, Share2, Info, Copy, MessageSquare, Send, BadgeCheck, Lock, QrCode, X, Code } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  CheckCircle2, 
+  Trash2, 
+  Share2, 
+  Info, 
+  Copy, 
+  MessageSquare, 
+  Send, 
+  BadgeCheck, 
+  Lock, 
+  QrCode, 
+  X, 
+  Code2, 
+  Crown, 
+  PieChart as PieIcon, 
+  BarChart3, 
+  Radio, 
+  AlertTriangle 
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
 import confetti from 'canvas-confetti';
 import { v4 as uuidv4 } from 'uuid';
 
-const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+const PALETTE = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#0ea5e9', '#14b8a6', '#f43f5e'];
 
 const CustomBar = (props: any) => {
   const { fill, x, y, width, height } = props;
@@ -23,7 +42,7 @@ const CustomBar = (props: any) => {
       initial={{ width: 0 }}
       animate={{ width: width > 0 ? width : 0 }}
       transition={{ duration: 0.8, type: "spring", bounce: 0.2 }}
-      rx={4}
+      rx={6}
     />
   );
 };
@@ -31,18 +50,20 @@ const CustomBar = (props: any) => {
 const PollView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
 
   const poll = useSelector((state: RootState) => state.polls.find(p => p.id === id));
   const userVote = useSelector((state: RootState) => state.userVotes[id || '']);
   const allUserVotes = useSelector((state: RootState) => state.userVotes);
   const loading = useSelector((state: RootState) => state.loading);
+
   const [copied, setCopied] = useState(false);
   const [embedCopied, setEmbedCopied] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [authorName, setAuthorName] = useState('');
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [chartView, setChartView] = useState<'bar' | 'donut'>('bar');
 
   const handleShare = async () => {
     try {
@@ -56,7 +77,7 @@ const PollView: React.FC = () => {
 
   const handleCopyEmbed = async () => {
     try {
-      const embedCode = `<iframe src="${window.location.origin}/poll/${poll?.id}" width="100%" height="600" frameborder="0" style="border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);"></iframe>`;
+      const embedCode = `<iframe src="${window.location.origin}/poll/${poll?.id}" width="100%" height="600" frameborder="0" style="border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);"></iframe>`;
       await navigator.clipboard.writeText(embedCode);
       setEmbedCopied(true);
       setTimeout(() => setEmbedCopied(false), 2000);
@@ -67,17 +88,29 @@ const PollView: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="flex flex-col justify-center items-center h-72 gap-4">
+        <div className="w-12 h-12 rounded-full border-4 border-primary-200 dark:border-slate-800 border-t-primary-600 animate-spin"></div>
+        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading live ballot...</p>
       </div>
     );
   }
 
   if (!poll) {
     return (
-      <div className="text-center py-20">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white transition-colors duration-200">Poll not found</h2>
-        <button onClick={() => navigate('/')} className="mt-4 text-primary underline">Go Home</button>
+      <div className="text-center py-20 px-4 max-w-md mx-auto">
+        <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-4">
+          <AlertTriangle className="w-8 h-8 text-amber-500" />
+        </div>
+        <h2 className="text-2xl font-display font-bold text-slate-900 dark:text-white mb-2">Poll Not Found</h2>
+        <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
+          This poll may have been removed or does not exist.
+        </p>
+        <button 
+          onClick={() => navigate('/')} 
+          className="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors"
+        >
+          Return to Dashboard
+        </button>
       </div>
     );
   }
@@ -106,18 +139,16 @@ const PollView: React.FC = () => {
       particleCount: 100,
       spread: 70,
       origin: { y: 0.6 },
-      colors: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+      colors: PALETTE
     });
 
     votePollEvent(poll.id, optionIds);
   };
   
-  const handleDelete = () => {
-      if(confirm('Are you sure you want to delete this poll?')) {
-          deletePollEvent(poll.id);
-          navigate('/');
-      }
-  }
+  const confirmDelete = () => {
+    deletePollEvent(poll.id);
+    navigate('/');
+  };
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,7 +159,7 @@ const PollView: React.FC = () => {
     const newComment = {
       id: uuidv4(),
       text: commentText.trim(),
-      author: authorName.trim() || 'Anonymous',
+      author: authorName.trim() || 'Anonymous Voter',
       createdAt: Date.now(),
       isTopContributor,
     };
@@ -138,22 +169,34 @@ const PollView: React.FC = () => {
   };
 
   const chartData = useMemo(() => {
-    return poll.options.map(opt => ({
-      name: opt.text.length > 15 ? opt.text.substring(0, 15) + '...' : opt.text,
+    return poll.options.map((opt, i) => ({
+      name: opt.text.length > 18 ? opt.text.substring(0, 18) + '...' : opt.text,
       fullName: opt.text,
-      votes: opt.votes
+      votes: opt.votes,
+      color: PALETTE[i % PALETTE.length]
     }));
   }, [poll]);
 
   const totalVotes = poll.totalVotes;
 
+  // Find leading option
+  const leadingOption = useMemo(() => {
+    if (totalVotes === 0 || poll.options.length === 0) return null;
+    return [...poll.options].sort((a, b) => b.votes - a.votes)[0];
+  }, [poll, totalVotes]);
+
   // Custom Tooltip for Chart
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      const pct = totalVotes > 0 ? Math.round((data.votes / totalVotes) * 100) : 0;
       return (
-        <div className="bg-white dark:bg-gray-800 p-3 border border-gray-100 dark:border-gray-700 shadow-xl rounded-lg text-sm transition-colors duration-200">
-          <p className="font-semibold text-gray-900 dark:text-white">{payload[0].payload.fullName}</p>
-          <p className="text-primary font-medium">{payload[0].value} votes</p>
+        <div className="bg-slate-900 text-white p-3 shadow-xl rounded-xl text-xs border border-slate-700/80">
+          <p className="font-bold mb-1 text-slate-100">{data.fullName}</p>
+          <div className="flex items-center gap-2">
+            <span className="text-emerald-400 font-extrabold text-sm">{data.votes} votes</span>
+            <span className="text-slate-400 font-medium">({pct}%)</span>
+          </div>
         </div>
       );
     }
@@ -161,81 +204,122 @@ const PollView: React.FC = () => {
   };
 
   return (
-    <div className={`max-w-6xl mx-auto ${poll.theme?.accentColor ? 'custom-theme-active' : ''}`}>
+    <div className={`max-w-6xl mx-auto space-y-6 ${poll.theme?.accentColor ? 'custom-theme-active' : ''}`}>
       {poll.theme?.backgroundImage && (
         <div 
           className="fixed inset-0 z-[-1] bg-cover bg-center transition-opacity duration-500" 
           style={{ 
             backgroundImage: `url(${poll.theme.backgroundImage})`,
-            opacity: 0.15 
+            opacity: 0.12 
           }}
         />
       )}
       
       {poll.theme?.accentColor && (
         <style>{`
-          .custom-theme-active .text-primary { color: ${poll.theme.accentColor} !important; }
-          .custom-theme-active .bg-primary { background-color: ${poll.theme.accentColor} !important; }
-          .custom-theme-active .border-primary { border-color: ${poll.theme.accentColor} !important; }
-          .custom-theme-active .hover\\:text-primary:hover { color: ${poll.theme.accentColor} !important; }
-          .custom-theme-active .hover\\:border-primary:hover { border-color: ${poll.theme.accentColor} !important; }
+          .custom-theme-active .text-primary-600 { color: ${poll.theme.accentColor} !important; }
+          .custom-theme-active .bg-primary-600 { background-color: ${poll.theme.accentColor} !important; }
+          .custom-theme-active .border-primary-500 { border-color: ${poll.theme.accentColor} !important; }
         `}</style>
       )}
 
-      <div className="flex items-center justify-between mb-8">
+      {/* Top Header Bar */}
+      <div className="flex items-center justify-between">
         <button 
           onClick={() => navigate('/')}
-          className="flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors"
+          className="inline-flex items-center text-sm font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Dashboard
+          <ArrowLeft className="w-4 h-4 mr-1.5" />
+          Back to Polls
         </button>
-        <div className="flex space-x-2">
-            <button onClick={handleDelete} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors" title="Delete Poll">
-                <Trash2 className="w-5 h-5" />
-            </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setShowQRModal(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-slate-300 shadow-sm transition-all"
+            title="Share or embed"
+          >
+            <QrCode className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Share & Embed</span>
+          </button>
+          <button 
+            onClick={handleShare}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-slate-300 shadow-sm transition-all"
+            title="Copy link"
+          >
+            {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copied ? 'Copied!' : 'Copy Link'}</span>
+          </button>
+          <button 
+            onClick={() => setShowDeleteModal(true)}
+            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors" 
+            title="Delete poll"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left Column: Voting Area */}
-        <div className="space-y-6">
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-8 transition-colors duration-200">
-            <div className="mb-6">
-               <div className="flex items-center gap-2 mb-3 flex-wrap">
-                 <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-semibold rounded-full uppercase tracking-wider shadow-sm">
-                    {poll.category || 'General'}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left Column: Ballot Card (7 cols) */}
+        <div className="lg:col-span-7 space-y-6">
+          <div className="bg-white dark:bg-slate-900/90 rounded-3xl shadow-xl shadow-slate-900/5 border border-slate-200/80 dark:border-slate-800/80 p-6 sm:p-8 transition-colors">
+            {/* Header Tags */}
+            <div className="mb-5">
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <span className="px-3 py-0.5 text-xs font-semibold rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400 border border-primary-200/60 dark:border-primary-800/50 uppercase tracking-wider">
+                  {poll.category || 'General'}
+                </span>
+                {poll.isPrivate && (
+                  <span className="px-2.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-semibold rounded-full border border-slate-200 dark:border-slate-700 uppercase tracking-wider flex items-center gap-1">
+                    <Lock className="w-3 h-3" />
+                    Unlisted
                   </span>
-                  {poll.isPrivate && (
-                    <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-semibold rounded-full uppercase tracking-wider shadow-sm flex items-center">
-                      <Lock className="w-3 h-3 mr-1" />
-                      Unlisted
-                    </span>
-                  )}
-               </div>
-                <h1 className="text-4xl font-display font-bold text-gray-900 dark:text-white leading-tight mb-3 transition-colors duration-200">
-                  {poll.question}
-                </h1>
-                <p className="text-gray-500 dark:text-gray-400 text-lg leading-relaxed transition-colors duration-200">
+                )}
+                {isExpired ? (
+                  <span className="px-2.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-semibold rounded-full border border-slate-200 dark:border-slate-700 uppercase tracking-wider">
+                    Closed
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-xs font-semibold rounded-full border border-emerald-200/60 dark:border-emerald-800/50 uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Live Voting
+                  </span>
+                )}
+              </div>
+
+              <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-slate-900 dark:text-white leading-tight tracking-tight mb-2">
+                {poll.question}
+              </h1>
+              {poll.description && (
+                <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base leading-relaxed">
                   {poll.description}
                 </p>
+              )}
             </div>
 
-              {isExpired && (
-                <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400 rounded-lg flex items-center shadow-sm border border-yellow-200 dark:border-yellow-700/50">
-                  <Info className="w-5 h-5 mr-3 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-semibold text-sm">Poll Closed</h4>
-                    <p className="text-xs mt-0.5 opacity-90">This poll has ended. You can still view the results and comments.</p>
-                  </div>
+            {/* Expired or Multiple-Choice Notice Banner */}
+            {isExpired ? (
+              <div className="mb-5 p-3.5 bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 rounded-2xl flex items-center gap-3 border border-amber-200/80 dark:border-amber-800/40 text-xs sm:text-sm">
+                <Info className="w-5 h-5 flex-shrink-0 text-amber-600" />
+                <div>
+                  <span className="font-bold">This poll has closed.</span>
+                  <p className="opacity-90 text-xs mt-0.5">Voting is no longer active, but final community results are shown below.</p>
                 </div>
-              )}
+              </div>
+            ) : poll.allowMultipleVotes && !hasVoted && (
+              <div className="mb-4 p-3 bg-indigo-50/70 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 rounded-xl flex items-center gap-2 border border-indigo-200/60 dark:border-indigo-800/40 text-xs">
+                <Radio className="w-4 h-4 text-indigo-500" />
+                <span><strong>Multiple selections allowed:</strong> Pick all options that apply, then hit Submit Vote.</span>
+              </div>
+            )}
 
+            {/* Ballot Options List */}
             <div className="space-y-3">
-              {poll.options.map((option) => {
+              {poll.options.map((option, index) => {
                 const isSelected = Array.isArray(userVote) ? userVote.includes(option.id) : userVote === option.id;
                 const isPendingSelection = poll.allowMultipleVotes && selectedOptions.includes(option.id);
                 const isActiveSelection = isSelected || isPendingSelection;
+                const isLeader = leadingOption && leadingOption.id === option.id && totalVotes > 0;
                 
                 const percentage = totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
                 
@@ -244,40 +328,78 @@ const PollView: React.FC = () => {
                     key={option.id}
                     onClick={() => handleVoteClick(option.id)}
                     disabled={hasVoted || isExpired}
-                    className={`relative w-full text-left p-4 rounded-xl border-2 transition-all overflow-hidden group ${
+                    className={`relative w-full text-left p-4 rounded-2xl border-2 transition-all duration-200 overflow-hidden group ${
                       isActiveSelection 
-                        ? 'border-primary bg-indigo-50 dark:bg-indigo-900/20' 
+                        ? 'border-primary-500 bg-primary-50/40 dark:bg-primary-950/20 shadow-sm' 
                         : (hasVoted || isExpired)
-                            ? 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 opacity-60' 
-                            : 'border-gray-100 dark:border-gray-700 hover:border-primary dark:hover:border-primary hover:shadow-md bg-white dark:bg-gray-800'
+                            ? 'border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/40' 
+                            : 'border-slate-200/80 dark:border-slate-700 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-md bg-white dark:bg-slate-800/90 cursor-pointer active:scale-[0.995]'
                     }`}
                   >
-                    {/* Progress Bar Background (only if voted or expired and not hidden) */}
+                    {/* Animated Progress Bar (when results are visible) */}
                     {showResults && (
                       <motion.div 
-                        className="absolute left-0 top-0 bottom-0 bg-indigo-100 dark:bg-indigo-900/40"
-                        initial={{ width: 0, opacity: 0.5 }}
+                        className={`absolute left-0 top-0 bottom-0 ${
+                          isLeader 
+                            ? 'bg-primary-100/90 dark:bg-primary-950/60' 
+                            : 'bg-slate-100 dark:bg-slate-800/80'
+                        }`}
+                        initial={{ width: 0 }}
                         animate={{ width: `${percentage}%` }}
                         transition={{ duration: 0.8, type: "spring", bounce: 0.2 }}
                       />
                     )}
                     
-                    <div className="relative flex justify-between items-center z-10">
-                      <div className="flex items-center">
-                        <div className={`w-6 h-6 border flex items-center justify-center mr-4 transition-colors ${poll.allowMultipleVotes ? 'rounded' : 'rounded-full'} ${
-                          isActiveSelection ? 'border-primary bg-primary text-white' : 'border-gray-300 dark:border-gray-600 text-transparent'
+                    <div className="relative flex justify-between items-center z-10 gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* Option Letter Tag / Checkbox Indicator */}
+                        <div className={`w-7 h-7 flex items-center justify-center shrink-0 text-xs font-bold transition-colors ${
+                          poll.allowMultipleVotes ? 'rounded-lg' : 'rounded-full'
+                        } ${
+                          isActiveSelection 
+                            ? 'bg-primary-600 text-white shadow-sm' 
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
                         }`}>
-                          <CheckCircle className="w-4 h-4" />
+                          {isActiveSelection ? (
+                            <CheckCircle2 className="w-4 h-4" />
+                          ) : (
+                            String.fromCharCode(65 + index)
+                          )}
                         </div>
-                        <span className={`font-medium text-lg ${isActiveSelection ? 'text-primary dark:text-indigo-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                          {option.text}
-                        </span>
+
+                        <div className="min-w-0">
+                          <span className={`font-semibold text-sm sm:text-base leading-snug block truncate ${
+                            isActiveSelection 
+                              ? 'text-primary-700 dark:text-primary-300' 
+                              : 'text-slate-800 dark:text-slate-100'
+                          }`}>
+                            {option.text}
+                          </span>
+                          {showResults && isSelected && (
+                            <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1">
+                              ✓ Your vote
+                            </span>
+                          )}
+                        </div>
                       </div>
                       
+                      {/* Percent and Counts */}
                       {showResults && (
-                        <div className="text-right">
-                          <span className="block font-bold text-gray-900 dark:text-white">{percentage}%</span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">{option.votes} votes</span>
+                        <div className="text-right shrink-0 flex items-center gap-2">
+                          {isLeader && (
+                            <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
+                              <Crown className="w-3 h-3 text-amber-500" />
+                              Leader
+                            </span>
+                          )}
+                          <div>
+                            <span className="block font-bold text-sm sm:text-base text-slate-900 dark:text-white">
+                              {percentage}%
+                            </span>
+                            <span className="text-[11px] text-slate-400">
+                              {option.votes} {option.votes === 1 ? 'vote' : 'votes'}
+                            </span>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -286,213 +408,270 @@ const PollView: React.FC = () => {
               })}
             </div>
 
+            {/* Multiple Choice Submit Button */}
             {poll.allowMultipleVotes && !hasVoted && !isExpired && selectedOptions.length > 0 && (
-              <div className="mt-6">
+              <div className="mt-5">
                 <button
                   onClick={() => submitVotes(selectedOptions)}
-                  className="w-full py-3 bg-primary hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg transition-colors flex items-center justify-center"
+                  className="w-full py-3.5 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-primary-500/25 hover:shadow-glow transition-all flex items-center justify-center gap-2 text-sm"
                 >
-                  <Send className="w-5 h-5 mr-2" />
-                  Submit Vote
+                  <Send className="w-4 h-4" />
+                  <span>Submit Your Votes ({selectedOptions.length} Selected)</span>
                 </button>
               </div>
             )}
 
+            {/* Post-Vote Confirmation Badge */}
             {hasVoted && (
-               <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg flex items-center justify-center animate-fade-in transition-colors duration-200">
-                  <CheckCircle className="w-5 h-5 mr-2" />
-                  <span>
-                    {isResultsHidden 
-                      ? "Thanks for voting! Results will be revealed when the poll closes." 
-                      : "Thanks for voting! Results are updated in real-time."}
-                  </span>
-               </div>
+              <div className="mt-5 p-3.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 rounded-2xl flex items-center justify-center gap-2 border border-emerald-200/70 dark:border-emerald-800/40 text-xs sm:text-sm font-medium">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>
+                  {isResultsHidden 
+                    ? "Your ballot is recorded. Results will unlock when the poll officially closes." 
+                    : "Your ballot is recorded in real-time. Thank you for voting!"}
+                </span>
+              </div>
             )}
             
-            <div className="mt-6 flex flex-col sm:flex-row items-center justify-between text-sm text-gray-400 dark:text-gray-500 pt-6 border-t border-gray-100 dark:border-gray-700 transition-colors duration-200">
-               <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4 sm:mb-0">
-                 <span>Total votes: {totalVotes}</span>
-                 {poll.expiresAt && !isExpired && (
-                   <>
-                     <span className="hidden sm:inline">&bull;</span>
-                     <span>Closes on {new Date(poll.expiresAt).toLocaleDateString()} at {new Date(poll.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                   </>
-                 )}
-               </div>
-               <div className="flex flex-wrap items-center gap-4">
-                 <button 
-                   onClick={() => setShowQRModal(true)}
-                   className="flex items-center hover:text-primary transition-colors"
-                 >
-                    <QrCode className="w-4 h-4 mr-1" />
-                    Share / Embed
-                 </button>
-                 <button 
-                   onClick={handleShare}
-                   className="flex items-center hover:text-primary transition-colors"
-                 >
-                    {copied ? <CheckCircle className="w-4 h-4 mr-1 text-green-500" /> : <Copy className="w-4 h-4 mr-1" />}
-                    {copied ? <span className="text-green-500">Copied!</span> : 'Copy Link'}
-                 </button>
-               </div>
+            {/* Meta Footer */}
+            <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-slate-400 dark:text-slate-500 gap-2">
+              <div className="flex items-center gap-3">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">
+                  {totalVotes} total {totalVotes === 1 ? 'ballot' : 'ballots'}
+                </span>
+                {poll.expiresAt && !isExpired && (
+                  <span>• Closes {new Date(poll.expiresAt).toLocaleDateString()}</span>
+                )}
+              </div>
+              <span className="text-[11px] text-slate-400">
+                Created {new Date(poll.createdAt).toLocaleDateString()}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Visualization */}
-        <div className="space-y-6">
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-8 h-full flex flex-col transition-colors duration-200">
-            <h3 className="text-2xl font-display font-bold text-gray-900 dark:text-white mb-6 flex items-center transition-colors duration-200">
-               Live Results
-               {totalVotes === 0 && !isResultsHidden && <span className="ml-2 text-sm font-normal text-gray-400 dark:text-gray-500">(No votes yet)</span>}
-            </h3>
+        {/* Right Column: Analytics & Visualization (5 cols) */}
+        <div className="lg:col-span-5 space-y-6">
+          <div className="bg-white dark:bg-slate-900/90 rounded-3xl shadow-xl shadow-slate-900/5 border border-slate-200/80 dark:border-slate-800/80 p-6 sm:p-7 flex flex-col transition-colors">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="text-lg font-display font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  Live Analytics
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">Real-time vote breakdown</p>
+              </div>
+
+              {/* Chart Mode Toggle */}
+              {totalVotes > 0 && !isResultsHidden && (
+                <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                  <button
+                    onClick={() => setChartView('bar')}
+                    className={`p-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      chartView === 'bar' 
+                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' 
+                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                    }`}
+                    title="Horizontal bar chart"
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setChartView('donut')}
+                    className={`p-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      chartView === 'donut' 
+                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' 
+                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                    }`}
+                    title="Donut distribution"
+                  >
+                    <PieIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
             
             {isResultsHidden ? (
-               <div className="flex-grow flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 min-h-[300px]">
-                   <div className="w-24 h-24 rounded-full bg-gray-50 dark:bg-gray-700/50 flex items-center justify-center mb-4 transition-colors duration-200">
-                       <Lock className="w-10 h-10 text-gray-300 dark:text-gray-500" />
-                   </div>
-                   <p className="text-center font-medium">Results are hidden.</p>
-                   <p className="text-center text-sm mt-2 opacity-80">Check back after the poll closes to see how everyone voted!</p>
-               </div>
-            ) : (
-              <>
-                <div className="flex-grow min-h-[300px]">
-                   {totalVotes > 0 ? (
-                     <ResponsiveContainer width="100%" height="100%">
-                       <BarChart
-                         data={chartData}
-                         layout="vertical"
-                         margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                       >
-                         <XAxis type="number" hide />
-                         <YAxis 
-                            dataKey="name" 
-                            type="category" 
-                            width={100} 
-                            tick={{fill: '#6b7280', fontSize: 12}}
-                            axisLine={false}
-                            tickLine={false}
-                         />
-                         <Tooltip content={<CustomTooltip />} cursor={{fill: '#f3f4f6', radius: 8}} />
-                         <Bar dataKey="votes" shape={<CustomBar />} barSize={32} isAnimationActive={false}>
-                            {chartData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                         </Bar>
-                       </BarChart>
-                     </ResponsiveContainer>
-                   ) : (
-                       <div className="h-full flex flex-col items-center justify-center text-gray-300 dark:text-gray-600">
-                           <div className="w-24 h-24 rounded-full bg-gray-50 dark:bg-gray-700/50 flex items-center justify-center mb-4 transition-colors duration-200">
-                               <BarChart className="w-10 h-10 text-gray-300 dark:text-gray-500" />
-                           </div>
-                           <p>Waiting for the first vote...</p>
-                       </div>
-                   )}
+              <div className="flex-grow flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 py-12">
+                <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3">
+                  <Lock className="w-8 h-8 text-slate-400 dark:text-slate-500" />
                 </div>
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Blind Voting Enabled</p>
+                <p className="text-xs text-center text-slate-400 mt-1 max-w-xs">
+                  The creator configured results to remain secret until the poll closes.
+                </p>
+              </div>
+            ) : totalVotes === 0 ? (
+              <div className="flex-grow flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 py-12">
+                <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3">
+                  <BarChart3 className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+                </div>
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">No Votes Cast Yet</p>
+                <p className="text-xs text-center text-slate-400 mt-1">Be the first to vote to populate the live charts!</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Leading Spotlight Metric */}
+                {leadingOption && (
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-r from-primary-50 to-indigo-50 dark:from-primary-950/40 dark:to-indigo-950/20 border border-primary-200/60 dark:border-primary-800/40 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase tracking-wider font-bold text-primary-700 dark:text-primary-300 flex items-center gap-1">
+                        <Crown className="w-3 h-3 text-amber-500" /> Leading Choice
+                      </span>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5 truncate max-w-[200px]">
+                        {leadingOption.text}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-lg font-extrabold text-primary-600 dark:text-primary-400">
+                        {Math.round((leadingOption.votes / totalVotes) * 100)}%
+                      </span>
+                      <span className="text-[10px] text-slate-500 block -mt-1">of total votes</span>
+                    </div>
+                  </div>
+                )}
 
-                 {/* Secondary Viz: Pie Chart (Small) */}
-                 {totalVotes > 0 && (
-                     <div className="mt-8 pt-8 border-t border-gray-100 dark:border-gray-700 transition-colors duration-200">
-                        <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-4 uppercase tracking-wider">Distribution</h4>
-                        <div className="h-48 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={chartData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={40}
-                                        outerRadius={70}
-                                        paddingAngle={5}
-                                        dataKey="votes"
-                                        isAnimationActive={false}
-                                    >
-                                        {chartData.map((entry, index) => (
-                                            <Cell 
-                                              key={`cell-${index}`} 
-                                              fill={COLORS[index % COLORS.length]} 
-                                              style={{ transition: 'all 0.5s ease-in-out' }}
-                                            />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                     </div>
-                 )}
-              </>
+                {/* Primary Chart Area */}
+                <div className="h-60 w-full pt-2">
+                  <ResponsiveContainer width="100%" height="100%">
+                    {chartView === 'bar' ? (
+                      <BarChart
+                        data={chartData}
+                        layout="vertical"
+                        margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                      >
+                        <XAxis type="number" hide />
+                        <YAxis 
+                          dataKey="name" 
+                          type="category" 
+                          width={95} 
+                          tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(99, 102, 241, 0.06)', radius: 8 }} />
+                        <Bar dataKey="votes" shape={<CustomBar />} barSize={26} isAnimationActive={false}>
+                          {chartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    ) : (
+                      <PieChart>
+                        <Pie
+                          data={chartData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={85}
+                          paddingAngle={4}
+                          dataKey="votes"
+                          isAnimationActive={false}
+                        >
+                          {chartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip content={<CustomTooltip />} />
+                      </PieChart>
+                    )}
+                  </ResponsiveContainer>
+                </div>
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Comments Section */}
-      <div className="mt-8 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-8 transition-colors duration-200">
-        <h3 className="text-2xl font-display font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-          <MessageSquare className="w-6 h-6 mr-3 text-primary" />
-          Discussion
-        </h3>
+      {/* Discussion Section */}
+      <div className="bg-white dark:bg-slate-900/90 rounded-3xl shadow-xl shadow-slate-900/5 border border-slate-200/80 dark:border-slate-800/80 p-6 sm:p-8 transition-colors">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-primary-50 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400">
+              <MessageSquare className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-xl font-display font-bold text-slate-900 dark:text-white">
+                Community Discussion
+              </h3>
+              <span className="text-xs text-slate-400">
+                {poll.comments ? poll.comments.length : 0} {poll.comments?.length === 1 ? 'comment' : 'comments'}
+              </span>
+            </div>
+          </div>
+        </div>
 
+        {/* Comment Form */}
         <form onSubmit={handleSubmitComment} className="mb-8">
-          <div className="flex flex-col sm:flex-row gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
               placeholder="Your name (optional)"
               value={authorName}
               onChange={(e) => setAuthorName(e.target.value)}
-              className="px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 dark:text-white sm:w-48"
+              className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/25 focus:border-primary-500 dark:text-white sm:w-48 shadow-sm"
             />
             <div className="relative flex-grow">
               <input
                 type="text"
-                placeholder="Share your thoughts..."
+                placeholder="Share your opinion or why you voted..."
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                className="w-full pl-4 pr-12 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 dark:text-white"
+                className="w-full pl-4 pr-12 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/25 focus:border-primary-500 dark:text-white shadow-sm"
                 required
               />
               <button
                 type="submit"
                 disabled={!commentText.trim()}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 text-white bg-primary rounded-md disabled:opacity-50 hover:bg-primary/90 transition-colors"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-40 transition-colors"
+                aria-label="Send comment"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
         </form>
 
-        <div className="space-y-4">
+        {/* Comment Stream */}
+        <div className="space-y-3">
           <AnimatePresence>
             {poll.comments && poll.comments.length > 0 ? (
-              poll.comments.map((comment) => (
-                <motion.div
-                  key={comment.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-800"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">{comment.author}</span>
-                      {comment.isTopContributor && (
-                        <span title="Top Contributor" className="flex items-center text-primary/80 dark:text-primary">
-                          <BadgeCheck className="w-4 h-4" />
-                        </span>
-                      )}
+              poll.comments.map((comment) => {
+                const initials = comment.author ? comment.author.substring(0, 2).toUpperCase() : 'AN';
+                return (
+                  <motion.div
+                    key={comment.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-100 dark:border-slate-800/80"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 font-bold text-xs flex items-center justify-center">
+                          {initials}
+                        </div>
+                        <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100">{comment.author}</span>
+                        {comment.isTopContributor && (
+                          <span title="Top Contributor" className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50">
+                            <BadgeCheck className="w-3 h-3" />
+                            Top Voter
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-slate-400">
+                        {new Date(comment.createdAt).toLocaleDateString()}
+                      </span>
                     </div>
-                    <span className="text-xs text-gray-400">
-                      {new Date(comment.createdAt).toLocaleDateString()} at {new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-300 text-sm">{comment.text}</p>
-                </motion.div>
-              ))
+                    <p className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm pl-9 leading-relaxed">
+                      {comment.text}
+                    </p>
+                  </motion.div>
+                );
+              })
             ) : (
-              <p className="text-center text-gray-500 dark:text-gray-400 py-4">No comments yet. Be the first to share your thoughts!</p>
+              <div className="text-center py-8 text-slate-400 text-xs">
+                No discussion comments yet. Be the first to share your perspective!
+              </div>
             )}
           </AnimatePresence>
         </div>
@@ -505,7 +684,7 @@ const PollView: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm"
             onClick={() => setShowQRModal(false)}
           >
             <motion.div
@@ -513,56 +692,114 @@ const PollView: React.FC = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative border border-gray-100 dark:border-gray-700"
+              className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative border border-slate-200 dark:border-slate-800"
             >
               <button 
                 onClick={() => setShowQRModal(false)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
               
-              <div className="flex flex-col md:flex-row gap-8 items-center">
-                <div className="flex flex-col items-center flex-1">
-                  <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 text-primary rounded-full flex items-center justify-center mb-4">
-                    <QrCode className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 text-center">Scan to Vote</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-4">
-                    Point your camera at this QR to open on your device.
-                  </p>
-                  
-                  <div className="bg-white p-4 rounded-xl shadow-inner border border-gray-100 flex items-center justify-center">
-                    <QRCodeSVG value={`${window.location.origin}/poll/${poll.id}`} size={160} />
-                  </div>
-                </div>
+              <div className="mb-6">
+                <h3 className="text-xl font-display font-bold text-slate-900 dark:text-white">
+                  Share & Embed Poll
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Invite participants via mobile QR code or embed on external sites.
+                </p>
+              </div>
 
-                <div className="hidden md:block w-px h-48 bg-gray-200 dark:bg-gray-700"></div>
-
-                <div className="flex flex-col items-center flex-1 w-full">
-                  <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 text-primary rounded-full flex items-center justify-center mb-4">
-                    <Code className="w-6 h-6" />
+              <div className="space-y-6">
+                {/* QR Code Section */}
+                <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700">
+                  <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
+                    <QRCodeSVG value={`${window.location.origin}/poll/${poll.id}`} size={120} />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 text-center">Embed Poll</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-4">
-                    Add this poll to your own website or Notion page.
-                  </p>
-
-                  <div className="w-full bg-gray-50 dark:bg-gray-900 rounded-xl p-3 border border-gray-200 dark:border-gray-700 relative group overflow-hidden">
-                    <pre className="text-xs text-gray-600 dark:text-gray-400 overflow-x-auto whitespace-pre-wrap font-mono break-all line-clamp-3">
-                      {`<iframe src="${window.location.origin}/poll/${poll.id}" width="100%" height="600" frameborder="0"></iframe>`}
-                    </pre>
+                  <div className="space-y-2 text-center sm:text-left">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-center sm:justify-start gap-1.5">
+                      <QrCode className="w-4 h-4 text-primary-500" />
+                      Mobile Quick Scan
+                    </span>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Scan with any smartphone camera to open and vote immediately.
+                    </p>
                     <button
-                      onClick={handleCopyEmbed}
-                      className="absolute inset-0 bg-black/5 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                      onClick={handleShare}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors"
                     >
-                      <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-1.5 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 font-medium text-sm flex items-center">
-                        {embedCopied ? <CheckCircle className="w-4 h-4 mr-1.5 text-green-500" /> : <Copy className="w-4 h-4 mr-1.5" />}
-                        {embedCopied ? 'Copied!' : 'Copy Snippet'}
-                      </div>
+                      {copied ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copied ? 'Copied Link!' : 'Copy Direct Link'}</span>
                     </button>
                   </div>
                 </div>
+
+                {/* Embed Code Snippet */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <Code2 className="w-4 h-4 text-primary-500" />
+                      HTML Embed Iframe
+                    </span>
+                    <button
+                      onClick={handleCopyEmbed}
+                      className="text-xs font-semibold text-primary-600 hover:underline flex items-center gap-1"
+                    >
+                      {embedCopied ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{embedCopied ? 'Copied!' : 'Copy Snippet'}</span>
+                    </button>
+                  </div>
+                  <div className="p-3 bg-slate-900 text-slate-200 rounded-xl font-mono text-xs overflow-x-auto border border-slate-800">
+                    {`<iframe src="${window.location.origin}/poll/${poll.id}" width="100%" height="600" frameborder="0"></iframe>`}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm"
+            onClick={() => setShowDeleteModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 dark:border-slate-800 text-center"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-950/50 text-red-500 flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white mb-1.5">
+                Delete this poll?
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
+                This will permanently delete "{poll.question}" and all associated votes and comments. This action cannot be undone.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteModal(false)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDelete}
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-700 text-white shadow-sm transition-colors"
+                >
+                  Delete Poll
+                </button>
               </div>
             </motion.div>
           </motion.div>

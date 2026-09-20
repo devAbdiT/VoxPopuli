@@ -20,6 +20,7 @@ import {
   X
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import PollListSkeleton from './PollSkeleton';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -203,14 +204,7 @@ const PollList: React.FC = () => {
   }, [filteredPolls, sortBy]);
 
   if (loading) {
-    return (
-      <div className="flex flex-col justify-center items-center h-72 gap-4">
-        <div className="relative w-12 h-12">
-          <div className="w-12 h-12 rounded-full border-4 border-primary-200 dark:border-slate-800 border-t-primary-600 animate-spin"></div>
-        </div>
-        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading live ballots...</p>
-      </div>
-    );
+    return <PollListSkeleton cardCount={6} />;
   }
 
   return (

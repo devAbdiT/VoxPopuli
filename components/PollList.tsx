@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { Link } from 'react-router-dom';
-import { Poll, PollCategory } from '../types';
+import { PollCategory } from '../types';
 import { 
   BarChart3, 
   Clock, 
@@ -51,14 +51,72 @@ const getCategoryBadgeClass = (category?: string) => {
   }
 };
 
+/**
+ * Highlights matching title keywords in real-time
+ */
+const HighlightedText: React.FC<{ text: string; query: string }> = ({ text, query }) => {
+  const trimmed = query.trim();
+  if (!trimmed) return <>{text}</>;
+
+  const keywords = trimmed.split(/\s+/).filter(Boolean);
+  if (keywords.length === 0) return <>{text}</>;
+
+  const pattern = keywords.map(kw => kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  try {
+    const regex = new RegExp(`(${pattern})`, 'gi');
+    const parts = text.split(regex);
+    return (
+      <>
+        {parts.map((part, i) =>
+          keywords.some(kw => kw.toLowerCase() === part.toLowerCase()) ? (
+            <mark 
+              key={i} 
+              className="bg-amber-200 dark:bg-amber-900/70 dark:text-amber-200 text-slate-900 rounded px-1 font-bold"
+            >
+              {part}
+            </mark>
+          ) : (
+            part
+          )
+        )}
+      </>
+    );
+  } catch {
+    return <>{text}</>;
+  }
+};
+
 const PollList: React.FC = () => {
   const polls = useSelector((state: RootState) => state.polls);
   const userVotes = useSelector((state: RootState) => state.userVotes);
   const loading = useSelector((state: RootState) => state.loading);
-  const [filter, setFilter] = useState<string>('All');
+
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'all' | 'closed'>('active');
+  const [filter, setFilter] = useState<string>('All');
   const [sortBy, setSortBy] = useState<string>('Newest');
   const [showMyVotesOnly, setShowMyVotesOnly] = useState<boolean>(false);
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Keyboard shortcut: '/' focuses the real-time search bar, 'Escape' clears it
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === '/' && document.activeElement !== searchInputRef.current) {
+        const tag = (document.activeElement?.tagName || '').toLowerCase();
+        if (tag !== 'input' && tag !== 'textarea') {
+          e.preventDefault();
+          searchInputRef.current?.focus();
+        }
+      } else if (e.key === 'Escape' && document.activeElement === searchInputRef.current) {
+        setSearchQuery('');
+        searchInputRef.current?.blur();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const categories = ['All', ...Object.values(PollCategory)];
   const sortOptions = [
@@ -66,6 +124,16 @@ const PollList: React.FC = () => {
     { label: 'Trending / Most Votes', value: 'Trending' },
     { label: 'Closing Soon', value: 'Closing Soon' }
   ];
+
+  // Active and total poll counts
+  const activePollCount = useMemo(() => {
+    const now = Date.now();
+    return polls.filter(p => !p.isPrivate && (!p.expiresAt || now <= p.expiresAt)).length;
+  }, [polls]);
+
+  const totalPollCount = useMemo(() => {
+    return polls.filter(p => !p.isPrivate).length;
+  }, [polls]);
 
   // Overall statistics
   const stats = useMemo(() => {
@@ -79,17 +147,37 @@ const PollList: React.FC = () => {
     };
   }, [polls, userVotes]);
 
+  // Real-time filtering by title keyword, active poll status, category, and votes
   const filteredPolls = useMemo(() => {
+    const now = Date.now();
+    const query = searchQuery.trim().toLowerCase();
+    const keywords = query ? query.split(/\s+/).filter(Boolean) : [];
+
     return polls.filter(p => {
       if (p.isPrivate) return false;
+
+      // Status filter: active (not expired) vs closed vs all
+      const isExpired = p.expiresAt ? now > p.expiresAt : false;
+      if (statusFilter === 'active' && isExpired) return false;
+      if (statusFilter === 'closed' && !isExpired) return false;
+
+      // Category filter
       const matchesCategory = filter === 'All' || p.category === filter;
-      const matchesSearch = 
-        p.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      // Real-time title keyword matching
+      let matchesSearch = true;
+      if (keywords.length > 0) {
+        const titleLower = p.question.toLowerCase();
+        // Checks direct phrase inclusion or all keywords matching title
+        matchesSearch = titleLower.includes(query) || keywords.every(kw => titleLower.includes(kw));
+      }
+
+      // Voted by me filter
       const matchesMyVotes = !showMyVotesOnly || !!userVotes[p.id];
+
       return matchesCategory && matchesSearch && matchesMyVotes;
     });
-  }, [polls, filter, searchQuery, showMyVotesOnly, userVotes]);
+  }, [polls, filter, searchQuery, statusFilter, showMyVotesOnly, userVotes]);
 
   const sortedPolls = useMemo(() => {
     return [...filteredPolls].sort((a, b) => {
@@ -126,7 +214,119 @@ const PollList: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Real-time Search Input Bar at the Top of the PollList Page */}
+      <div className="bg-white dark:bg-slate-900/90 rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-md shadow-slate-900/5 transition-all">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+          {/* Real-time Search Input */}
+          <div className="relative flex-grow">
+            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none flex items-center">
+              <Search className={`w-4 h-4 transition-colors ${searchQuery ? 'text-primary-600 dark:text-primary-400' : ''}`} />
+            </div>
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder={
+                statusFilter === 'active'
+                  ? "Search active polls by title keyword... (e.g. 'framework', 'coffee')"
+                  : "Search all polls by title keyword..."
+              }
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-24 py-3 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl sm:rounded-2xl text-sm font-medium placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 dark:text-white transition-all shadow-xs"
+            />
+            {/* Clear & Keyboard shortcut */}
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+              {searchQuery ? (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
+                  title="Clear search (Esc)"
+                  aria-label="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              ) : (
+                <kbd className="hidden sm:inline-flex items-center px-2 py-0.5 text-[11px] font-mono font-medium text-slate-400 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md shadow-xs" title="Press / to focus search">
+                  /
+                </kbd>
+              )}
+            </div>
+          </div>
+
+          {/* Active Polls Status Filter Tabs */}
+          <div className="flex items-center gap-1.5 shrink-0 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setStatusFilter('active')}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                statusFilter === 'active'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Active Polls</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold">
+                {activePollCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setStatusFilter('all')}
+              className={`inline-flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                statusFilter === 'all'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <span>All Polls</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 font-bold">
+                {totalPollCount}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Real-time Feedback Status Line */}
+        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+            {searchQuery.trim() ? (
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-ping"></span>
+                <span>
+                  Real-time match: <strong className="text-slate-900 dark:text-white">{sortedPolls.length}</strong> {statusFilter === 'active' ? 'active' : ''} {sortedPolls.length === 1 ? 'poll' : 'polls'} matching title keyword <span className="text-primary-600 dark:text-primary-400 font-bold">"{searchQuery.trim()}"</span>
+                </span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span>
+                  Filtering <strong className="text-slate-900 dark:text-white">{sortedPolls.length}</strong> {statusFilter === 'active' ? 'active' : ''} {sortedPolls.length === 1 ? 'poll' : 'polls'} in real-time
+                </span>
+              </span>
+            )}
+          </div>
+
+          {(searchQuery || filter !== 'All' || showMyVotesOnly || statusFilter !== 'active') && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setFilter('All');
+                setShowMyVotesOnly(false);
+                setStatusFilter('active');
+              }}
+              className="text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-1"
+            >
+              Reset all filters
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Community Pulse Hero Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-slate-900 to-[#0b0f19] border border-slate-800/80 p-6 sm:p-8 text-white shadow-xl shadow-slate-900/10">
         <div className="absolute -right-12 -top-12 w-64 h-64 bg-primary-500/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -164,69 +364,10 @@ const PollList: React.FC = () => {
         </div>
       </div>
 
-      {/* Search, Filter Tabs & Sort Controls */}
-      <div className="space-y-4">
-        <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4">
-          {/* Search bar */}
-          <div className="relative flex-grow max-w-md">
-            <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search polls, keywords, topics..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 dark:text-white transition-all shadow-sm"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                aria-label="Clear search"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Quick My Votes toggle button */}
-            <button
-              onClick={() => setShowMyVotesOnly(!showMyVotesOnly)}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all border ${
-                showMyVotesOnly 
-                  ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 shadow-sm' 
-                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-              }`}
-            >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Voted By Me</span>
-              {stats.myVoteCount > 0 && (
-                <span className="ml-1 px-1.5 py-0.2 rounded-full bg-emerald-500 text-white text-[10px]">
-                  {stats.myVoteCount}
-                </span>
-              )}
-            </button>
-
-            {/* Sort Selector */}
-            <div className="relative min-w-[170px]">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                <ArrowUpDown className="w-3.5 h-3.5" />
-              </div>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full pl-9 pr-8 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:focus:border-primary-500 transition-colors cursor-pointer appearance-none shadow-sm"
-              >
-                {sortOptions.map(option => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
+      {/* Category Tabs, My Votes & Sort Controls */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         {/* Category Scrollbar */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 no-scrollbar">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 no-scrollbar w-full sm:w-auto">
           {categories.map(cat => {
             const isActive = filter === cat;
             return (
@@ -244,29 +385,88 @@ const PollList: React.FC = () => {
             );
           })}
         </div>
+
+        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end shrink-0">
+          {/* Quick My Votes toggle button */}
+          <button
+            onClick={() => setShowMyVotesOnly(!showMyVotesOnly)}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+              showMyVotesOnly 
+                ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 shadow-sm' 
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+            }`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>Voted By Me</span>
+            {stats.myVoteCount > 0 && (
+              <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-emerald-500 text-white text-[10px]">
+                {stats.myVoteCount}
+              </span>
+            )}
+          </button>
+
+          {/* Sort Selector */}
+          <div className="relative min-w-[160px]">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+              <ArrowUpDown className="w-3.5 h-3.5" />
+            </div>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="w-full pl-8 pr-7 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:focus:border-primary-500 transition-colors cursor-pointer appearance-none shadow-xs"
+            >
+              {sortOptions.map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* Polls Cards Grid or Empty States */}
       {sortedPolls.length === 0 ? (
-        searchQuery.length > 0 || showMyVotesOnly || filter !== 'All' ? (
+        searchQuery.length > 0 || showMyVotesOnly || filter !== 'All' || statusFilter !== 'all' ? (
           <div className="text-center py-16 px-4 bg-white/60 dark:bg-slate-900/60 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 backdrop-blur-sm shadow-sm">
             <div className="bg-slate-100 dark:bg-slate-800 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-400">
               <SearchX className="w-8 h-8" />
             </div>
-            <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white mb-1.5">No matching polls</h3>
+            <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white mb-1.5">
+              {searchQuery.trim() ? `No polls found matching "${searchQuery.trim()}"` : 'No matching polls'}
+            </h3>
             <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm mx-auto mb-5">
-              We couldn't find any polls matching your active filters. Try clearing your search query or reset the category.
+              {statusFilter === 'active' && searchQuery.trim()
+                ? `We couldn't find any active polls with title keyword "${searchQuery.trim()}". Try searching all polls or clearing the query.`
+                : "We couldn't find any polls matching your active filters. Try clearing your search query or reset the category."}
             </p>
-            <button
-              onClick={() => {
-                setSearchQuery('');
-                setFilter('All');
-                setShowMyVotesOnly(false);
-              }}
-              className="px-4 py-2 text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-colors"
-            >
-              Reset Filters
-            </button>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="px-4 py-2 text-xs font-semibold bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 hover:bg-primary-100 rounded-xl transition-colors border border-primary-200 dark:border-primary-800"
+                >
+                  Clear search query
+                </button>
+              )}
+              {statusFilter === 'active' && (
+                <button
+                  onClick={() => setStatusFilter('all')}
+                  className="px-4 py-2 text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-colors"
+                >
+                  Search all polls instead
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setFilter('All');
+                  setShowMyVotesOnly(false);
+                  setStatusFilter('active');
+                }}
+                className="px-4 py-2 text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-colors"
+              >
+                Reset all filters
+              </button>
+            </div>
           </div>
         ) : (
           <div className="text-center py-20 px-4 bg-white/60 dark:bg-slate-900/60 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 backdrop-blur-sm shadow-sm">
@@ -347,9 +547,9 @@ const PollList: React.FC = () => {
                     )}
                   </div>
                   
-                  {/* Question */}
+                  {/* Question with real-time keyword highlighting */}
                   <h2 className="text-lg font-display font-bold text-slate-900 dark:text-white mb-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors line-clamp-2 leading-snug">
-                    {poll.question}
+                    <HighlightedText text={poll.question} query={searchQuery} />
                   </h2>
                   
                   {/* Description */}

@@ -2,5 +2,5 @@
   "name": "Pulse - Live Polling",
   "description": "An interactive, real-time polling platform featuring live data visualization, Redux state management, and Gemini-powered poll generation.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

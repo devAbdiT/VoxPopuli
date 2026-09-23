@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import PollListSkeleton from './PollSkeleton';
+import TrendingPolls from './TrendingPolls';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -393,6 +394,11 @@ const PollList: React.FC = () => {
   const sortedPolls = useMemo(() => {
     return [...filteredPolls].sort((a, b) => {
       if (sortBy === 'Trending') {
+        const a24h = a.votesLast24h ?? Math.round(a.totalVotes * 0.6);
+        const b24h = b.votesLast24h ?? Math.round(b.totalVotes * 0.6);
+        if (b24h !== a24h) {
+          return b24h - a24h;
+        }
         return b.totalVotes - a.totalVotes;
       } else if (sortBy === 'Closing Soon') {
         const now = Date.now();
@@ -589,6 +595,9 @@ const PollList: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Trending Polls Section with 24-Hour Vote Data Visualizations */}
+      <TrendingPolls polls={polls} userVotes={userVotes} />
 
       {/* Tag-Based Filtering System Panel */}
       <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm transition-colors">

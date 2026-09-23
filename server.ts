@@ -21,11 +21,31 @@ async function startServer() {
   // In-memory data store for the polls
   let polls = [
     {
+      id: '5',
+      question: 'Will humanoid robots become common household items by 2030?',
+      description: 'Evaluating rapid advancements in personal robotics, AI actuators, and consumer pricing.',
+      createdAt: Date.now() - 50000,
+      totalVotes: 188,
+      votesLast24h: 122,
+      voteVelocity: 9.8,
+      hourlyVotes24h: [3, 2, 1, 1, 2, 3, 4, 7, 8, 10, 12, 11, 8, 7, 9, 8, 6, 5, 4, 4, 3, 2, 1, 2],
+      category: 'Technology',
+      comments: [],
+      options: [
+        { id: 'opt_r1', text: 'Yes, personal robotics are imminent', votes: 56 },
+        { id: 'opt_r2', text: 'No, too expensive and mechanically complex', votes: 78 },
+        { id: 'opt_r3', text: 'Only in specialized healthcare / eldercare', votes: 54 },
+      ]
+    },
+    {
       id: '1',
       question: 'What is your favorite frontend framework?',
       description: 'Help us decide which framework rules the web in 2024.',
       createdAt: Date.now(),
       totalVotes: 150,
+      votesLast24h: 94,
+      voteVelocity: 7.2,
+      hourlyVotes24h: [2, 1, 0, 1, 0, 1, 2, 4, 6, 8, 9, 7, 5, 6, 8, 10, 7, 5, 4, 3, 2, 1, 2, 1],
       category: 'Technology',
       comments: [],
       options: [
@@ -36,24 +56,14 @@ async function startServer() {
       ]
     },
     {
-      id: '2',
-      question: 'Coffee or Tea?',
-      description: 'The ultimate morning beverage showdown.',
-      createdAt: Date.now() - 100000,
-      totalVotes: 82,
-      category: 'Lifestyle',
-      comments: [],
-      options: [
-        { id: 'opt_c', text: 'Coffee', votes: 50 },
-        { id: 'opt_t', text: 'Tea', votes: 32 },
-      ]
-    },
-    {
       id: '3',
       question: 'Should AI-generated campaign ads require mandatory disclosures?',
       description: 'Debating digital election transparency and safeguards in modern politics.',
       createdAt: Date.now() - 200000,
       totalVotes: 114,
+      votesLast24h: 68,
+      voteVelocity: 5.4,
+      hourlyVotes24h: [1, 0, 1, 0, 0, 1, 3, 5, 6, 4, 5, 7, 6, 5, 4, 3, 4, 5, 3, 2, 1, 1, 1, 1],
       category: 'Politics',
       comments: [],
       options: [
@@ -63,11 +73,30 @@ async function startServer() {
       ]
     },
     {
+      id: '2',
+      question: 'Coffee or Tea?',
+      description: 'The ultimate morning beverage showdown.',
+      createdAt: Date.now() - 100000,
+      totalVotes: 82,
+      votesLast24h: 46,
+      voteVelocity: 3.8,
+      hourlyVotes24h: [0, 0, 0, 0, 1, 2, 6, 8, 7, 4, 3, 2, 2, 1, 2, 1, 2, 1, 1, 1, 0, 1, 0, 1],
+      category: 'Lifestyle',
+      comments: [],
+      options: [
+        { id: 'opt_c', text: 'Coffee', votes: 50 },
+        { id: 'opt_t', text: 'Tea', votes: 32 },
+      ]
+    },
+    {
       id: '4',
       question: 'Best cuisine for a Friday night gathering?',
       description: 'Vote on the ultimate crowd-pleaser for dinner with friends.',
       createdAt: Date.now() - 300000,
       totalVotes: 64,
+      votesLast24h: 36,
+      voteVelocity: 2.9,
+      hourlyVotes24h: [0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 4, 3, 2, 3, 4, 3, 2, 2, 1, 1, 1, 1, 0],
       category: 'Food',
       comments: [],
       options: [
@@ -106,6 +135,14 @@ async function startServer() {
           
           if (updated) {
             poll.totalVotes += 1;
+            poll.votesLast24h = (poll.votesLast24h || 0) + 1;
+            if (!poll.hourlyVotes24h || poll.hourlyVotes24h.length !== 24) {
+              poll.hourlyVotes24h = new Array(24).fill(0);
+            }
+            poll.hourlyVotes24h[23] = (poll.hourlyVotes24h[23] || 0) + 1;
+            const recent3h = poll.hourlyVotes24h.slice(-3).reduce((a: number, b: number) => a + b, 0);
+            poll.voteVelocity = Number((recent3h / 3).toFixed(1));
+
             // Broadcast to all clients including the sender
             io.emit("poll_voted", { pollId, optionId, poll });
           }
@@ -115,6 +152,9 @@ async function startServer() {
 
     // Handle add poll
     socket.on("create_poll", (newPoll: any) => {
+      if (!newPoll.votesLast24h) newPoll.votesLast24h = 0;
+      if (!newPoll.hourlyVotes24h) newPoll.hourlyVotes24h = new Array(24).fill(0);
+      if (!newPoll.voteVelocity) newPoll.voteVelocity = 0;
       polls.unshift(newPoll); // Add to beginning
       io.emit("poll_created", newPoll);
     });

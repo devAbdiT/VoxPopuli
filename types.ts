@@ -18,6 +18,9 @@ export interface Poll {
   options: PollOption[];
   createdAt: number;
   totalVotes: number;
+  votesLast24h?: number;
+  hourlyVotes24h?: number[];
+  voteVelocity?: number;
   description?: string;
   category?: string;
   comments?: Comment[];

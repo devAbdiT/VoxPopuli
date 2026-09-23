@@ -1,15 +1,21 @@
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { RootState } from './store';
 import PollList from './components/PollList';
 import CreatePoll from './components/CreatePoll';
 import PollView from './components/PollView';
+import UserProfile from './components/UserProfile';
 import ThemeToggle from './components/ThemeToggle';
 import { ThemeProvider } from './ThemeContext';
-import { Plus, Radio, Sparkles } from 'lucide-react';
+import { Plus, Radio, User } from 'lucide-react';
 
 const Navigation: React.FC = () => {
   const location = useLocation();
   const isCreatePage = location.pathname === '/create';
+  const isProfilePage = location.pathname === '/profile';
+  const userVotes = useSelector((state: RootState) => state.userVotes);
+  const votedCount = Object.keys(userVotes).length;
 
   return (
     <nav className="backdrop-blur-xl bg-white/80 dark:bg-[#0f172a]/80 border-b border-slate-200/70 dark:border-slate-800/80 sticky top-0 z-50 transition-colors duration-300 shadow-sm">
@@ -40,15 +46,39 @@ const Navigation: React.FC = () => {
             </Link>
           </div>
 
-          <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* User Profile / Recently Voted Activity Nav Link */}
+            <Link
+              to="/profile"
+              className={`inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 border cursor-pointer ${
+                isProfilePage
+                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 dark:border-white shadow-xs'
+                  : 'bg-white/70 dark:bg-slate-800/70 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+              title="View your voter profile and recently voted polls"
+            >
+              <User className={`w-4 h-4 ${isProfilePage ? 'text-white dark:text-slate-900' : 'text-primary-500'}`} />
+              <span className="hidden sm:inline">Profile</span>
+              {votedCount > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold transition-colors ${
+                  isProfilePage
+                    ? 'bg-white/20 dark:bg-slate-900/20 text-current'
+                    : 'bg-primary-100 dark:bg-primary-950/80 text-primary-700 dark:text-primary-300'
+                }`}>
+                  {votedCount}
+                </span>
+              )}
+            </Link>
+
             <ThemeToggle />
+
             {!isCreatePage && (
               <Link 
                 to="/create" 
-                className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 shadow-sm hover:shadow-glow hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/40"
+                className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 shadow-sm hover:shadow-glow hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/40 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                <span>New Poll</span>
+                <span className="hidden sm:inline">New Poll</span>
               </Link>
             )}
           </div>
@@ -78,6 +108,7 @@ const App: React.FC = () => {
                 <Route path="/" element={<PollList />} />
                 <Route path="/create" element={<CreatePoll />} />
                 <Route path="/poll/:id" element={<PollView />} />
+                <Route path="/profile" element={<UserProfile />} />
               </Routes>
             </div>
           </main>

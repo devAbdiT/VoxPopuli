@@ -33,7 +33,8 @@ import {
   Heart,
   Coins,
   Atom,
-  Palette
+  Palette,
+  ExternalLink
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import PollListSkeleton from './PollSkeleton';
@@ -575,10 +576,16 @@ const PollList: React.FC = () => {
               <span className="block text-xl sm:text-2xl font-display font-bold text-emerald-400">{stats.totalVotes}</span>
               <span className="text-[11px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">Votes Cast</span>
             </div>
-            <div className="p-3.5 sm:p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md text-center">
-              <span className="block text-xl sm:text-2xl font-display font-bold text-indigo-300">{stats.myVoteCount}</span>
-              <span className="text-[11px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">You Voted</span>
-            </div>
+            <Link 
+              to="/profile" 
+              className="p-3.5 sm:p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-indigo-400/50 backdrop-blur-md text-center transition-all group block cursor-pointer"
+              title="View your recently voted polls in Profile"
+            >
+              <span className="block text-xl sm:text-2xl font-display font-bold text-indigo-300 group-hover:scale-105 transition-transform">{stats.myVoteCount}</span>
+              <span className="text-[11px] sm:text-xs text-slate-400 group-hover:text-indigo-200 font-medium uppercase tracking-wider flex items-center justify-center gap-1">
+                You Voted <ExternalLink className="w-3 h-3 opacity-70" />
+              </span>
+            </Link>
           </div>
         </div>
       </div>

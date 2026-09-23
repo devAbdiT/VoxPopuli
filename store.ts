@@ -1,6 +1,7 @@
 import { configureStore, createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { io } from 'socket.io-client';
 import { Poll, AppState } from './types';
+import { recordVoteToStorage, removeVoteFromStorage, clearRecentlyVotedStorage } from './services/votedPollsStorage';
 
 // Setup Socket.IO client
 export const socket = io(window.location.origin);
@@ -64,6 +65,16 @@ const pollsSlice = createSlice({
     recordUserVote: (state, action: PayloadAction<{ pollId: string; optionId: string | string[] }>) => {
       state.userVotes[action.payload.pollId] = action.payload.optionId;
       saveUserVotes(state.userVotes);
+      const poll = state.polls.find(p => p.id === action.payload.pollId);
+      recordVoteToStorage(action.payload.pollId, action.payload.optionId, poll);
+    },
+    removeUserVote: (state, action: PayloadAction<string>) => {
+      delete state.userVotes[action.payload];
+      removeVoteFromStorage(action.payload);
+    },
+    clearAllUserVotes: (state) => {
+      state.userVotes = {};
+      clearRecentlyVotedStorage();
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
@@ -74,7 +85,18 @@ const pollsSlice = createSlice({
   },
 });
 
-export const { setInitialState, pollCreated, pollVoted, pollUpdated, pollDeleted, recordUserVote, setLoading, setError } = pollsSlice.actions;
+export const { 
+  setInitialState, 
+  pollCreated, 
+  pollVoted, 
+  pollUpdated, 
+  pollDeleted, 
+  recordUserVote, 
+  removeUserVote, 
+  clearAllUserVotes, 
+  setLoading, 
+  setError 
+} = pollsSlice.actions;
 
 export const store = configureStore({
   reducer: pollsSlice.reducer,

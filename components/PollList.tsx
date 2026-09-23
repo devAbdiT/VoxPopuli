@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { PollCategory } from '../types';
 import { 
   BarChart3, 
@@ -19,7 +19,21 @@ import {
   MessageSquare,
   X,
   Copy,
-  Check
+  Check,
+  Tag,
+  Tags,
+  Cpu,
+  Coffee,
+  Landmark,
+  Utensils,
+  Film,
+  Trophy,
+  GraduationCap,
+  Compass,
+  Heart,
+  Coins,
+  Atom,
+  Palette
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import PollListSkeleton from './PollSkeleton';
@@ -37,21 +51,119 @@ const itemVariants = {
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 350, damping: 26 } }
 };
 
-const getCategoryBadgeClass = (category?: string) => {
-  switch (category) {
-    case PollCategory.TECH:
-      return 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200/60 dark:border-blue-800/50';
-    case PollCategory.LIFESTYLE:
-      return 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-800/50';
-    case PollCategory.FOOD:
-      return 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/50';
-    case PollCategory.ENTERTAINMENT:
-      return 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border-purple-200/60 dark:border-purple-800/50';
-    case PollCategory.SPORTS:
-      return 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-200/60 dark:border-rose-800/50';
-    default:
-      return 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-indigo-200/60 dark:border-indigo-800/50';
+export interface CategoryConfig {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badgeClass: string;
+  activeClass: string;
+  dotColor: string;
+}
+
+export const CATEGORY_MAP: Record<string, CategoryConfig> = {
+  [PollCategory.TECH]: {
+    label: 'Technology',
+    icon: Cpu,
+    badgeClass: 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200/60 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/60',
+    activeClass: 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/30 ring-2 ring-blue-500/30',
+    dotColor: 'bg-blue-500',
+  },
+  [PollCategory.LIFESTYLE]: {
+    label: 'Lifestyle',
+    icon: Coffee,
+    badgeClass: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60',
+    activeClass: 'bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-500/30 ring-2 ring-emerald-500/30',
+    dotColor: 'bg-emerald-500',
+  },
+  [PollCategory.POLITICS]: {
+    label: 'Politics',
+    icon: Landmark,
+    badgeClass: 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border-purple-200/60 dark:border-purple-800/50 hover:bg-purple-100 dark:hover:bg-purple-900/60',
+    activeClass: 'bg-purple-600 text-white border-purple-600 shadow-sm shadow-purple-500/30 ring-2 ring-purple-500/30',
+    dotColor: 'bg-purple-500',
+  },
+  [PollCategory.FOOD]: {
+    label: 'Food',
+    icon: Utensils,
+    badgeClass: 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/60',
+    activeClass: 'bg-amber-600 text-white border-amber-600 shadow-sm shadow-amber-500/30 ring-2 ring-amber-500/30',
+    dotColor: 'bg-amber-500',
+  },
+  [PollCategory.ENTERTAINMENT]: {
+    label: 'Entertainment',
+    icon: Film,
+    badgeClass: 'bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400 border-pink-200/60 dark:border-pink-800/50 hover:bg-pink-100 dark:hover:bg-pink-900/60',
+    activeClass: 'bg-pink-600 text-white border-pink-600 shadow-sm shadow-pink-500/30 ring-2 ring-pink-500/30',
+    dotColor: 'bg-pink-500',
+  },
+  [PollCategory.SPORTS]: {
+    label: 'Sports',
+    icon: Trophy,
+    badgeClass: 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-200/60 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/60',
+    activeClass: 'bg-rose-600 text-white border-rose-600 shadow-sm shadow-rose-500/30 ring-2 ring-rose-500/30',
+    dotColor: 'bg-rose-500',
+  },
+  [PollCategory.EDUCATION]: {
+    label: 'Education',
+    icon: GraduationCap,
+    badgeClass: 'bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border-sky-200/60 dark:border-sky-800/50 hover:bg-sky-100 dark:hover:bg-sky-900/60',
+    activeClass: 'bg-sky-600 text-white border-sky-600 shadow-sm shadow-sky-500/30 ring-2 ring-sky-500/30',
+    dotColor: 'bg-sky-500',
+  },
+  [PollCategory.TRAVEL]: {
+    label: 'Travel',
+    icon: Compass,
+    badgeClass: 'bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 border-teal-200/60 dark:border-teal-800/50 hover:bg-teal-100 dark:hover:bg-teal-900/60',
+    activeClass: 'bg-teal-600 text-white border-teal-600 shadow-sm shadow-teal-500/30 ring-2 ring-teal-500/30',
+    dotColor: 'bg-teal-500',
+  },
+  [PollCategory.HEALTH]: {
+    label: 'Health & Wellness',
+    icon: Heart,
+    badgeClass: 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border-red-200/60 dark:border-red-800/50 hover:bg-red-100 dark:hover:bg-red-900/60',
+    activeClass: 'bg-red-600 text-white border-red-600 shadow-sm shadow-red-500/30 ring-2 ring-red-500/30',
+    dotColor: 'bg-red-500',
+  },
+  [PollCategory.FINANCE]: {
+    label: 'Finance',
+    icon: Coins,
+    badgeClass: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300/60 dark:border-emerald-700/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60',
+    activeClass: 'bg-emerald-700 text-white border-emerald-700 shadow-sm shadow-emerald-600/30 ring-2 ring-emerald-600/30',
+    dotColor: 'bg-emerald-600',
+  },
+  [PollCategory.SCIENCE]: {
+    label: 'Science',
+    icon: Atom,
+    badgeClass: 'bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border-violet-200/60 dark:border-violet-800/50 hover:bg-violet-100 dark:hover:bg-violet-900/60',
+    activeClass: 'bg-violet-600 text-white border-violet-600 shadow-sm shadow-violet-500/30 ring-2 ring-violet-500/30',
+    dotColor: 'bg-violet-500',
+  },
+  [PollCategory.ART]: {
+    label: 'Art & Culture',
+    icon: Palette,
+    badgeClass: 'bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-200/60 dark:border-fuchsia-800/50 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/60',
+    activeClass: 'bg-fuchsia-600 text-white border-fuchsia-600 shadow-sm shadow-fuchsia-500/30 ring-2 ring-fuchsia-500/30',
+    dotColor: 'bg-fuchsia-500',
+  },
+  [PollCategory.OTHER]: {
+    label: 'Other',
+    icon: Tag,
+    badgeClass: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700',
+    activeClass: 'bg-slate-800 dark:bg-slate-700 text-white border-slate-700 shadow-sm ring-2 ring-slate-500/30',
+    dotColor: 'bg-slate-400',
   }
+};
+
+export const getCategoryMeta = (category?: string): CategoryConfig => {
+  if (category && CATEGORY_MAP[category]) {
+    return CATEGORY_MAP[category];
+  }
+  return {
+    label: category || 'General',
+    icon: Tag,
+    badgeClass: 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-indigo-200/60 dark:border-indigo-800/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60',
+    activeClass: 'bg-primary-600 text-white border-primary-600 shadow-sm shadow-primary-500/30 ring-2 ring-primary-500/30',
+    dotColor: 'bg-primary-500',
+  };
 };
 
 /**
@@ -94,12 +206,37 @@ const PollList: React.FC = () => {
   const userVotes = useSelector((state: RootState) => state.userVotes);
   const loading = useSelector((state: RootState) => state.loading);
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTag = searchParams.get('tag') || searchParams.get('category');
+
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'active' | 'all' | 'closed'>('active');
-  const [filter, setFilter] = useState<string>('All');
+  const [filter, setFilter] = useState<string>(urlTag || 'All');
   const [sortBy, setSortBy] = useState<string>('Newest');
   const [showMyVotesOnly, setShowMyVotesOnly] = useState<boolean>(false);
   const [copiedPollId, setCopiedPollId] = useState<string | null>(null);
+
+  // Sync state if URL tag parameter changes externally
+  useEffect(() => {
+    if (urlTag && urlTag !== filter) {
+      setFilter(urlTag);
+    }
+  }, [urlTag]);
+
+  // Handler to toggle or select category tag and update URL
+  const handleSelectTag = (tag: string) => {
+    const nextTag = filter === tag ? 'All' : tag;
+    setFilter(nextTag);
+    const newParams = new URLSearchParams(searchParams);
+    if (nextTag === 'All') {
+      newParams.delete('tag');
+      newParams.delete('category');
+    } else {
+      newParams.set('tag', nextTag);
+      newParams.delete('category');
+    }
+    setSearchParams(newParams, { replace: true });
+  };
 
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -180,6 +317,23 @@ const PollList: React.FC = () => {
     { label: 'Trending / Most Votes', value: 'Trending' },
     { label: 'Closing Soon', value: 'Closing Soon' }
   ];
+
+  // Count public polls per category tag (respecting status filter)
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { All: 0 };
+    const now = Date.now();
+    polls.forEach(p => {
+      if (p.isPrivate) return;
+      const isExpired = p.expiresAt ? now > p.expiresAt : false;
+      if (statusFilter === 'active' && isExpired) return;
+      if (statusFilter === 'closed' && !isExpired) return;
+
+      counts['All'] = (counts['All'] || 0) + 1;
+      const cat = p.category || 'Other';
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return counts;
+  }, [polls, statusFilter]);
 
   // Active and total poll counts
   const activePollCount = useMemo(() => {
@@ -341,20 +495,36 @@ const PollList: React.FC = () => {
 
         {/* Real-time Feedback Status Line */}
         <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-2 flex-wrap text-slate-500 dark:text-slate-400">
             {searchQuery.trim() ? (
               <span className="inline-flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-ping"></span>
                 <span>
-                  Real-time match: <strong className="text-slate-900 dark:text-white">{sortedPolls.length}</strong> {statusFilter === 'active' ? 'active' : ''} {sortedPolls.length === 1 ? 'poll' : 'polls'} matching title keyword <span className="text-primary-600 dark:text-primary-400 font-bold">"{searchQuery.trim()}"</span>
+                  Real-time match: <strong className="text-slate-900 dark:text-white">{sortedPolls.length}</strong> {statusFilter === 'active' ? 'active' : ''} {sortedPolls.length === 1 ? 'poll' : 'polls'} {filter !== 'All' ? <>in <span className="font-semibold text-primary-600 dark:text-primary-400">{filter}</span></> : ''} matching title keyword <span className="text-primary-600 dark:text-primary-400 font-bold">"{searchQuery.trim()}"</span>
                 </span>
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                 <span>
-                  Filtering <strong className="text-slate-900 dark:text-white">{sortedPolls.length}</strong> {statusFilter === 'active' ? 'active' : ''} {sortedPolls.length === 1 ? 'poll' : 'polls'} in real-time
+                  Filtering <strong className="text-slate-900 dark:text-white">{sortedPolls.length}</strong> {statusFilter === 'active' ? 'active' : ''} {sortedPolls.length === 1 ? 'poll' : 'polls'} {filter !== 'All' ? <>under tag <span className="font-semibold text-primary-600 dark:text-primary-400">{filter}</span></> : ''} in real-time
                 </span>
+              </span>
+            )}
+
+            {/* Active Tag chip in status bar */}
+            {filter !== 'All' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 animate-in fade-in">
+                <Tag className="w-3 h-3 text-primary-500" />
+                <span>Tag: <strong>{filter}</strong></span>
+                <button
+                  type="button"
+                  onClick={() => handleSelectTag('All')}
+                  className="hover:text-red-500 dark:hover:text-red-400 ml-0.5 rounded p-0.5 cursor-pointer"
+                  title="Remove tag filter"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               </span>
             )}
           </div>
@@ -364,11 +534,11 @@ const PollList: React.FC = () => {
               type="button"
               onClick={() => {
                 setSearchQuery('');
-                setFilter('All');
+                handleSelectTag('All');
                 setShowMyVotesOnly(false);
                 setStatusFilter('active');
               }}
-              className="text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-1"
+              className="text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
             >
               Reset all filters
             </button>
@@ -413,85 +583,181 @@ const PollList: React.FC = () => {
         </div>
       </div>
 
-      {/* Category Tabs, My Votes & Sort Controls */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        {/* Category Scrollbar */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 no-scrollbar w-full sm:w-auto">
-          {categories.map(cat => {
-            const isActive = filter === cat;
+      {/* Tag-Based Filtering System Panel */}
+      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm transition-colors">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-3.5 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-primary-100 dark:bg-primary-950 text-primary-600 dark:text-primary-400">
+              <Tags className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Filter by Topic Tag
+                </h3>
+                {filter !== 'All' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800 animate-in fade-in">
+                    Active: {filter}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Filter live ballots by categories like Technology, Lifestyle, Politics, or click any card badge
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            {filter !== 'All' && (
+              <button
+                type="button"
+                onClick={() => handleSelectTag('All')}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 bg-slate-100 dark:bg-slate-800 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+                title="Clear selected tag filter"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Clear Tag</span>
+              </button>
+            )}
+
+            {/* Quick My Votes toggle button */}
+            <button
+              onClick={() => setShowMyVotesOnly(!showMyVotesOnly)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border cursor-pointer ${
+                showMyVotesOnly 
+                  ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 shadow-xs' 
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+              }`}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Voted By Me</span>
+              {stats.myVoteCount > 0 && (
+                <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-emerald-500 text-white text-[10px]">
+                  {stats.myVoteCount}
+                </span>
+              )}
+            </button>
+
+            {/* Sort Selector */}
+            <div className="relative min-w-[150px]">
+              <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <ArrowUpDown className="w-3.5 h-3.5" />
+              </div>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full pl-8 pr-7 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:focus:border-primary-500 transition-colors cursor-pointer appearance-none shadow-xs"
+              >
+                {sortOptions.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Scrollable / Flexible Tag Pills Row */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 no-scrollbar scroll-smooth">
+          {/* 'All Topics' Tag */}
+          <button
+            type="button"
+            onClick={() => handleSelectTag('All')}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 whitespace-nowrap flex-shrink-0 border cursor-pointer ${
+              filter === 'All'
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 dark:border-white shadow-sm ring-2 ring-slate-900/20 dark:ring-white/20'
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-750 border-slate-200 dark:border-slate-700'
+            }`}
+          >
+            <Tags className="w-3.5 h-3.5" />
+            <span>All Topics</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+              filter === 'All'
+                ? 'bg-white/20 dark:bg-slate-900/20 text-current'
+                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+            }`}>
+              {categoryCounts['All'] || 0}
+            </span>
+          </button>
+
+          {/* Individual Category Tags */}
+          {Object.values(PollCategory).map(cat => {
+            const meta = getCategoryMeta(cat);
+            const Icon = meta.icon;
+            const count = categoryCounts[cat] || 0;
+            const isSelected = filter === cat;
+
             return (
               <button
                 key={cat}
-                onClick={() => setFilter(cat)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0 border ${
-                  isActive 
-                    ? 'bg-primary-600 text-white border-primary-600 shadow-sm shadow-primary-500/30' 
-                    : 'bg-white dark:bg-slate-900/90 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800'
+                type="button"
+                onClick={() => handleSelectTag(cat)}
+                title={isSelected ? `Click to deselect ${cat}` : `Filter by ${cat} tag`}
+                className={`group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 whitespace-nowrap flex-shrink-0 border cursor-pointer ${
+                  isSelected
+                    ? meta.activeClass
+                    : `${meta.badgeClass} shadow-xs`
                 }`}
               >
-                {cat}
+                <Icon className={`w-3.5 h-3.5 transition-transform group-hover:scale-110 ${isSelected ? 'text-white' : ''}`} />
+                <span>{cat}</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold transition-colors ${
+                  isSelected
+                    ? 'bg-white/25 text-white'
+                    : count > 0 
+                      ? 'bg-white/80 dark:bg-slate-800 text-current shadow-xs' 
+                      : 'bg-slate-200/50 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500'
+                }`}>
+                  {count}
+                </span>
               </button>
             );
           })}
-        </div>
-
-        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end shrink-0">
-          {/* Quick My Votes toggle button */}
-          <button
-            onClick={() => setShowMyVotesOnly(!showMyVotesOnly)}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-              showMyVotesOnly 
-                ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 shadow-sm' 
-                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-            }`}
-          >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Voted By Me</span>
-            {stats.myVoteCount > 0 && (
-              <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-emerald-500 text-white text-[10px]">
-                {stats.myVoteCount}
-              </span>
-            )}
-          </button>
-
-          {/* Sort Selector */}
-          <div className="relative min-w-[160px]">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-              <ArrowUpDown className="w-3.5 h-3.5" />
-            </div>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="w-full pl-8 pr-7 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:focus:border-primary-500 transition-colors cursor-pointer appearance-none shadow-xs"
-            >
-              {sortOptions.map(option => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-          </div>
         </div>
       </div>
 
       {/* Polls Cards Grid or Empty States */}
       {sortedPolls.length === 0 ? (
         searchQuery.length > 0 || showMyVotesOnly || filter !== 'All' || statusFilter !== 'all' ? (
-          <div className="text-center py-16 px-4 bg-white/60 dark:bg-slate-900/60 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 backdrop-blur-sm shadow-sm">
-            <div className="bg-slate-100 dark:bg-slate-800 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-400">
-              <SearchX className="w-8 h-8" />
+          <div className="text-center py-16 px-4 bg-white/70 dark:bg-slate-900/70 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 backdrop-blur-sm shadow-sm max-w-2xl mx-auto">
+            <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4">
+              {filter !== 'All' ? <Tag className="w-8 h-8" /> : <SearchX className="w-8 h-8" />}
             </div>
-            <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white mb-1.5">
-              {searchQuery.trim() ? `No polls found matching "${searchQuery.trim()}"` : 'No matching polls'}
+            <h3 className="text-xl font-display font-bold text-slate-900 dark:text-white mb-2">
+              {filter !== 'All'
+                ? `No polls found in "${filter}" tag`
+                : searchQuery.trim()
+                  ? `No polls found matching "${searchQuery.trim()}"`
+                  : 'No matching polls found'}
             </h3>
-            <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm mx-auto mb-5">
-              {statusFilter === 'active' && searchQuery.trim()
-                ? `We couldn't find any active polls with title keyword "${searchQuery.trim()}". Try searching all polls or clearing the query.`
-                : "We couldn't find any polls matching your active filters. Try clearing your search query or reset the category."}
+            <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md mx-auto mb-6 leading-relaxed">
+              {filter !== 'All'
+                ? `There are currently no ${statusFilter === 'active' ? 'active' : ''} polls categorized under "${filter}". You can explore other tags or be the first to create one!`
+                : statusFilter === 'active' && searchQuery.trim()
+                  ? `We couldn't find any active polls with title keyword "${searchQuery.trim()}". Try searching all polls or clearing the search query.`
+                  : 'No polls match your current combination of filters. Try clearing your search keyword or switching category tags.'}
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
+              {filter !== 'All' && (
+                <button
+                  type="button"
+                  onClick={() => handleSelectTag('All')}
+                  className="px-4 py-2 text-xs font-semibold bg-primary-600 text-white hover:bg-primary-700 rounded-xl transition-colors shadow-sm cursor-pointer"
+                >
+                  View all tags
+                </button>
+              )}
+              {filter !== 'All' && (
+                <Link
+                  to="/create"
+                  className="px-4 py-2 text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors"
+                >
+                  Create a poll in {filter}
+                </Link>
+              )}
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="px-4 py-2 text-xs font-semibold bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 hover:bg-primary-100 rounded-xl transition-colors border border-primary-200 dark:border-primary-800"
+                  className="px-4 py-2 text-xs font-semibold bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 hover:bg-primary-100 rounded-xl transition-colors border border-primary-200 dark:border-primary-800 cursor-pointer"
                 >
                   Clear search query
                 </button>
@@ -499,7 +765,7 @@ const PollList: React.FC = () => {
               {statusFilter === 'active' && (
                 <button
                   onClick={() => setStatusFilter('all')}
-                  className="px-4 py-2 text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-colors"
+                  className="px-4 py-2 text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-colors cursor-pointer"
                 >
                   Search all polls instead
                 </button>
@@ -507,11 +773,11 @@ const PollList: React.FC = () => {
               <button
                 onClick={() => {
                   setSearchQuery('');
-                  setFilter('All');
+                  handleSelectTag('All');
                   setShowMyVotesOnly(false);
                   setStatusFilter('active');
                 }}
-                className="px-4 py-2 text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-colors"
+                className="px-4 py-2 text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-colors cursor-pointer"
               >
                 Reset all filters
               </button>
@@ -546,6 +812,8 @@ const PollList: React.FC = () => {
           {sortedPolls.map((poll) => {
             const isExpired = poll.expiresAt ? Date.now() > poll.expiresAt : false;
             const hasVoted = !!userVotes[poll.id];
+            const cardCategoryMeta = getCategoryMeta(poll.category);
+            const CardCategoryIcon = cardCategoryMeta.icon;
             
             // Calculate leading option
             let leadingOption = null;
@@ -573,9 +841,24 @@ const PollList: React.FC = () => {
                   {/* Header Badges */}
                   <div className="flex justify-between items-start mb-3 gap-2">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className={`px-2.5 py-0.5 text-[11px] font-semibold rounded-full border uppercase tracking-wider ${getCategoryBadgeClass(poll.category)}`}>
-                        {poll.category || 'General'}
-                      </span>
+                      {/* Interactive Tag Pill on Card */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleSelectTag(poll.category || 'Other');
+                        }}
+                        title={`Filter by tag: ${poll.category || 'General'}`}
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-semibold rounded-full border uppercase tracking-wider transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer z-10 ${
+                          filter === poll.category
+                            ? cardCategoryMeta.activeClass
+                            : cardCategoryMeta.badgeClass
+                        }`}
+                      >
+                        <CardCategoryIcon className="w-3 h-3" />
+                        <span>{poll.category || 'General'}</span>
+                      </button>
                       {isExpired ? (
                         <span className="px-2.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[11px] font-semibold rounded-full border border-slate-200 dark:border-slate-700 uppercase tracking-wider">
                           Closed

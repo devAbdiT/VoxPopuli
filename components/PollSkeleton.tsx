@@ -117,20 +117,32 @@ export const SearchAndFiltersSkeleton: React.FC = () => {
         </div>
       </div>
 
-      {/* Category Pills & Sort Bar Skeleton */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
-          {[18, 22, 24, 20, 26, 22].map((w, index) => (
+      {/* Tag-Based Filtering Panel Skeleton */}
+      <div className="relative bg-white dark:bg-slate-900/90 rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
+        <ShimmerOverlay />
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-slate-200 dark:bg-slate-800 animate-pulse" />
+            <div className="space-y-1">
+              <div className="h-4 w-36 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
+              <div className="h-3 w-56 bg-slate-100 dark:bg-slate-800/60 rounded animate-pulse hidden sm:block" />
+            </div>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+            <div className="h-8 w-28 bg-slate-200 dark:bg-slate-800/80 rounded-xl animate-pulse" />
+            <div className="h-8 w-36 bg-slate-200 dark:bg-slate-800/80 rounded-xl animate-pulse" />
+          </div>
+        </div>
+
+        {/* Tag Pills Row Skeleton */}
+        <div className="flex items-center gap-2 overflow-x-auto w-full">
+          {[22, 26, 24, 24, 20, 26, 22].map((w, index) => (
             <div 
               key={index} 
-              className={`h-8 rounded-full bg-slate-200 dark:bg-slate-800/80 animate-pulse`} 
+              className="h-8 rounded-full bg-slate-200 dark:bg-slate-800/80 animate-pulse flex-shrink-0" 
               style={{ width: `${w * 4}px` }} 
             />
           ))}
-        </div>
-        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
-          <div className="h-8 w-28 bg-slate-200 dark:bg-slate-800/80 rounded-xl animate-pulse" />
-          <div className="h-8 w-36 bg-slate-200 dark:bg-slate-800/80 rounded-xl animate-pulse" />
         </div>
       </div>
     </div>

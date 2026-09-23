@@ -47,6 +47,34 @@ async function startServer() {
         { id: 'opt_c', text: 'Coffee', votes: 50 },
         { id: 'opt_t', text: 'Tea', votes: 32 },
       ]
+    },
+    {
+      id: '3',
+      question: 'Should AI-generated campaign ads require mandatory disclosures?',
+      description: 'Debating digital election transparency and safeguards in modern politics.',
+      createdAt: Date.now() - 200000,
+      totalVotes: 114,
+      category: 'Politics',
+      comments: [],
+      options: [
+        { id: 'opt_p1', text: 'Yes, mandatory for all campaign media', votes: 78 },
+        { id: 'opt_p2', text: 'Only for realistic audio/video deepfakes', votes: 26 },
+        { id: 'opt_p3', text: 'No, let platform guidelines handle it', votes: 10 },
+      ]
+    },
+    {
+      id: '4',
+      question: 'Best cuisine for a Friday night gathering?',
+      description: 'Vote on the ultimate crowd-pleaser for dinner with friends.',
+      createdAt: Date.now() - 300000,
+      totalVotes: 64,
+      category: 'Food',
+      comments: [],
+      options: [
+        { id: 'opt_f1', text: 'Neapolitan Pizza', votes: 28 },
+        { id: 'opt_f2', text: 'Street Tacos', votes: 22 },
+        { id: 'opt_f3', text: 'Sushi & Ramen', votes: 14 },
+      ]
     }
   ];
 

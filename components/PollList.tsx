@@ -20,6 +20,7 @@ import {
   X,
   Copy,
   Check,
+  Share2,
   Tag,
   Tags,
   Cpu,
@@ -36,7 +37,7 @@ import {
   Palette,
   ExternalLink
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import PollListSkeleton from './PollSkeleton';
 import TrendingPolls from './TrendingPolls';
 
@@ -217,6 +218,7 @@ const PollList: React.FC = () => {
   const [sortBy, setSortBy] = useState<string>('Newest');
   const [showMyVotesOnly, setShowMyVotesOnly] = useState<boolean>(false);
   const [copiedPollId, setCopiedPollId] = useState<string | null>(null);
+  const [copyToast, setCopyToast] = useState<{ show: boolean; title: string } | null>(null);
 
   // Sync state if URL tag parameter changes externally
   useEffect(() => {
@@ -242,12 +244,16 @@ const PollList: React.FC = () => {
 
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleCopyLink = (e: React.MouseEvent, pollId: string) => {
+  const handleCopyLink = (e: React.MouseEvent, poll: { id: string; question: string } | string) => {
     e.preventDefault();
     e.stopPropagation();
 
+    const pollId = typeof poll === 'string' ? poll : poll.id;
+    const pollTitle = typeof poll === 'string' ? '' : poll.question;
+
     const origin = window.location.origin;
-    const shareUrl = `${origin}/#/poll/${pollId}`;
+    const pathname = window.location.pathname.replace(/\/$/, '');
+    const shareUrl = `${origin}${pathname}/#/poll/${pollId}`;
 
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(shareUrl).catch(() => {
@@ -259,11 +265,13 @@ const PollList: React.FC = () => {
     }
 
     setCopiedPollId(pollId);
+    setCopyToast({ show: true, title: pollTitle || 'Community Poll' });
     if (copyTimeoutRef.current) {
       clearTimeout(copyTimeoutRef.current);
     }
     copyTimeoutRef.current = setTimeout(() => {
       setCopiedPollId(null);
+      setCopyToast(null);
     }, 2200);
   };
 
@@ -944,41 +952,33 @@ const PollList: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-1.5">
-                      {/* Copy Link button with confirmation tooltip */}
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={(e) => handleCopyLink(e, poll.id)}
-                          aria-label={copiedPollId === poll.id ? "Link copied!" : "Copy link to poll"}
-                          className={`p-1.5 rounded-lg transition-all relative group/btn flex items-center justify-center ${
-                            copiedPollId === poll.id
-                              ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300'
-                              : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-                          }`}
-                        >
-                          {copiedPollId === poll.id ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 animate-in zoom-in-75" />
-                          ) : (
-                            <Copy className="w-3.5 h-3.5" />
-                          )}
-                        </button>
-
-                        {/* Confirmation Tooltip */}
-                        {copiedPollId === poll.id && (
-                          <div
-                            role="status"
-                            aria-live="polite"
-                            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-20 px-2.5 py-1 bg-slate-900 text-white dark:bg-slate-800 dark:text-emerald-300 text-[11px] font-semibold rounded-md shadow-lg shadow-black/20 whitespace-nowrap flex items-center gap-1 animate-in fade-in zoom-in-95 duration-150 pointer-events-none"
-                          >
-                            <Check className="w-3 h-3 text-emerald-400" />
-                            <span>Link copied!</span>
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900 dark:border-t-slate-800" />
-                          </div>
+                    <div className="flex items-center gap-2">
+                      {/* 'Copy Link' share button with instant feedback */}
+                      <button
+                        type="button"
+                        onClick={(e) => handleCopyLink(e, poll)}
+                        aria-label={copiedPollId === poll.id ? "Direct poll link copied to clipboard!" : `Copy link for ${poll.question}`}
+                        title="Copy direct link to this poll"
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 border cursor-pointer select-none ${
+                          copiedPollId === poll.id
+                            ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700/80 shadow-xs'
+                            : 'bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                        }`}
+                      >
+                        {copiedPollId === poll.id ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-500 animate-in zoom-in-75" />
+                            <span className="font-bold text-emerald-600 dark:text-emerald-300">Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Share2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-primary-500 transition-colors" />
+                            <span>Copy Link</span>
+                          </>
                         )}
-                      </div>
+                      </button>
 
-                      <div className="p-1 text-primary-600 dark:text-primary-400 font-semibold group-hover:translate-x-0.5 transition-transform">
+                      <div className="p-1 text-primary-600 dark:text-primary-400 font-semibold group-hover:translate-x-0.5 transition-transform" title="View poll">
                         <ChevronRight className="w-4 h-4" />
                       </div>
                     </div>
@@ -989,6 +989,37 @@ const PollList: React.FC = () => {
           })}
         </motion.div>
       )}
+
+      {/* Floating Link Copied Toast Notification */}
+      <AnimatePresence>
+        {copyToast?.show && (
+          <motion.div
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.96 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 bg-slate-900 text-white dark:bg-white dark:text-slate-900 rounded-2xl shadow-xl shadow-slate-950/20 border border-slate-700/60 dark:border-slate-200 text-xs sm:text-sm font-medium"
+            role="status"
+            aria-live="polite"
+          >
+            <div className="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 dark:text-emerald-600 flex items-center justify-center shrink-0">
+              <Check className="w-4 h-4 text-emerald-400 dark:text-emerald-600" />
+            </div>
+            <div className="flex flex-col max-w-[240px] sm:max-w-xs">
+              <span className="font-bold">Link copied to clipboard!</span>
+              <span className="text-[11px] opacity-75 truncate">{copyToast.title}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCopyToast(null)}
+              className="ml-1 text-slate-400 hover:text-white dark:hover:text-slate-900 p-1 rounded-lg transition-colors cursor-pointer"
+              aria-label="Dismiss notification"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

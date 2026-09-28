@@ -99,12 +99,35 @@ export const UserProfile: React.FC = () => {
   const handleCopyLink = (e: React.MouseEvent, pollId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    const url = `${window.location.origin}/#/poll/${pollId}`;
+    const origin = window.location.origin;
+    const pathname = window.location.pathname.replace(/\/$/, '');
+    const url = `${origin}${pathname}/#/poll/${pollId}`;
     if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(url);
+      navigator.clipboard.writeText(url).catch(() => {
+        copyFallback(url);
+      });
+    } else {
+      copyFallback(url);
     }
     setCopiedPollId(pollId);
     setTimeout(() => setCopiedPollId(null), 2000);
+  };
+
+  const copyFallback = (text: string) => {
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      document.execCommand('copy');
+      textArea.remove();
+    } catch (err) {
+      console.error('Failed to copy link', err);
+    }
   };
 
   const handleRemoveSingle = (e: React.MouseEvent, pollId: string) => {

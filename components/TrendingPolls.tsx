@@ -11,6 +11,7 @@ import {
   Sparkles, 
   Copy, 
   Check, 
+  Share2,
   Layers, 
   Activity, 
   ChevronRight,
@@ -114,12 +115,35 @@ export const TrendingPolls: React.FC<TrendingPollsProps> = ({ polls, userVotes }
   const handleCopy = (e: React.MouseEvent, pollId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    const url = `${window.location.origin}/#/poll/${pollId}`;
+    const origin = window.location.origin;
+    const pathname = window.location.pathname.replace(/\/$/, '');
+    const url = `${origin}${pathname}/#/poll/${pollId}`;
     if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(url);
+      navigator.clipboard.writeText(url).catch(() => {
+        copyFallback(url);
+      });
+    } else {
+      copyFallback(url);
     }
     setCopiedPollId(pollId);
     setTimeout(() => setCopiedPollId(null), 2000);
+  };
+
+  const copyFallback = (text: string) => {
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      document.execCommand('copy');
+      textArea.remove();
+    } catch (err) {
+      console.error('Failed to copy link', err);
+    }
   };
 
   if (trendingPolls.length === 0) return null;
@@ -356,13 +380,24 @@ export const TrendingPolls: React.FC<TrendingPollsProps> = ({ polls, userVotes }
                     <button
                       type="button"
                       onClick={(e) => handleCopy(e, poll.id)}
-                      className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-md transition-colors"
-                      title="Copy link"
+                      className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                        copiedPollId === poll.id
+                          ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700/80 shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border-slate-200 dark:border-slate-700'
+                      }`}
+                      title="Copy direct share link to this poll"
+                      aria-label="Copy direct share link"
                     >
                       {copiedPollId === poll.id ? (
-                        <Check className="w-3.5 h-3.5 text-emerald-500" />
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-500 animate-in zoom-in-75" />
+                          <span>Copied!</span>
+                        </>
                       ) : (
-                        <Copy className="w-3.5 h-3.5" />
+                        <>
+                          <Share2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-primary-500" />
+                          <span>Copy Link</span>
+                        </>
                       )}
                     </button>
                   </div>

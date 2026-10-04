@@ -23,6 +23,7 @@ export interface Poll {
   voteVelocity?: number;
   description?: string;
   category?: string;
+  tags?: string[];
   comments?: Comment[];
   expiresAt?: number;
   isPrivate?: boolean;
@@ -38,6 +39,8 @@ export interface PollCreationData {
   question: string;
   options: string[];
   description: string;
+  category?: string;
+  tags?: string[];
   expiresAt?: number;
   isPrivate?: boolean;
   allowMultipleVotes?: boolean;

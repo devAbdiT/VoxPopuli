@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { createPollEvent } from '../store';
 import { generatePollContent } from '../services/geminiService';
 import { PollCategory } from '../types';
+import { getCategoryMeta } from './PollList';
 import { 
   Sparkles, 
   Plus, 
@@ -19,7 +20,10 @@ import {
   Layers,
   CheckCircle2,
   Lock,
-  ListFilter
+  ListFilter,
+  Tag,
+  Tags,
+  X
 } from 'lucide-react';
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
@@ -40,6 +44,22 @@ const SUGGESTED_TOPICS = [
   'AI Productivity Tools'
 ];
 
+const CATEGORY_SUGGESTED_TAGS: Record<string, string[]> = {
+  [PollCategory.TECH]: ['Frontend', 'AI', 'JavaScript', 'Cloud', 'OpenSource', 'Mobile'],
+  [PollCategory.POLITICS]: ['Elections', 'Policy', 'Democracy', 'GlobalAffairs', 'Debate'],
+  [PollCategory.LIFESTYLE]: ['WorkLife', 'MorningRoutine', 'Wellness', 'Habits', 'Coffee'],
+  [PollCategory.FOOD]: ['Dining', 'Cooking', 'Pizza', 'CoffeeVsTea', 'StreetFood'],
+  [PollCategory.ENTERTAINMENT]: ['Movies', 'Gaming', 'Streaming', 'Music', 'Series'],
+  [PollCategory.SPORTS]: ['Football', 'Basketball', 'Fitness', 'Running', 'Esports'],
+  [PollCategory.EDUCATION]: ['Learning', 'Students', 'HigherEd', 'StudyTips'],
+  [PollCategory.TRAVEL]: ['Vacation', 'Adventure', 'Destinations', 'FlightTips'],
+  [PollCategory.HEALTH]: ['MentalHealth', 'Nutrition', 'Sleep', 'FitnessGoal'],
+  [PollCategory.FINANCE]: ['Investing', 'Crypto', 'Budgeting', 'Savings', 'Stocks'],
+  [PollCategory.SCIENCE]: ['Space', 'Physics', 'Biotech', 'Climate', 'Innovation'],
+  [PollCategory.ART]: ['Design', 'Photography', 'Illustration', 'Music', 'Architecture'],
+  [PollCategory.OTHER]: ['Discussion', 'Opinion', 'Trending', 'Community'],
+};
+
 const CreatePoll: React.FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -49,6 +69,8 @@ const CreatePoll: React.FC = () => {
   const [question, setQuestion] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string>(PollCategory.TECH);
+  const [tags, setTags] = useState<string[]>(['Technology']);
+  const [tagInput, setTagInput] = useState<string>('');
   const [options, setOptions] = useState<string[]>(['', '']);
   const [expiry, setExpiry] = useState<string>('never');
   const [isPrivate, setIsPrivate] = useState<boolean>(false);
@@ -58,6 +80,38 @@ const CreatePoll: React.FC = () => {
   const [backgroundImage, setBackgroundImage] = useState<string>('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [previewMode, setPreviewMode] = useState<boolean>(false);
+
+  const handleSelectCategory = (newCat: string) => {
+    setCategory(newCat);
+    setTags(prev => {
+      // Remove other top-level enum category tags so we don't pile up multiple primary categories
+      const nonCategoryTags = prev.filter(t => !Object.values(PollCategory).includes(t as any));
+      return [newCat, ...nonCategoryTags];
+    });
+  };
+
+  const handleAddTag = (rawTag: string) => {
+    const cleaned = rawTag.replace(/^#/, '').trim();
+    if (!cleaned) return;
+    if (tags.length >= 6) return;
+    if (!tags.some(t => t.toLowerCase() === cleaned.toLowerCase())) {
+      setTags([...tags, cleaned]);
+    }
+    setTagInput('');
+  };
+
+  const handleRemoveTag = (indexToRemove: number) => {
+    setTags(tags.filter((_, i) => i !== indexToRemove));
+  };
+
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      handleAddTag(tagInput);
+    } else if (e.key === 'Backspace' && !tagInput && tags.length > 0) {
+      handleRemoveTag(tags.length - 1);
+    }
+  };
 
   const handleAddOption = () => {
     if (options.length < 8) {
@@ -93,6 +147,25 @@ const CreatePoll: React.FC = () => {
       setQuestion(data.question);
       setDescription(data.description);
       setOptions(data.options);
+      
+      let matchedCategory = category;
+      if (data.category) {
+        const found = Object.values(PollCategory).find(
+          c => c.toLowerCase() === data.category!.toLowerCase()
+        );
+        if (found) {
+          matchedCategory = found;
+          setCategory(found);
+        }
+      }
+
+      if (data.tags && Array.isArray(data.tags)) {
+        const cleanTags = data.tags.map(t => t.replace(/^#/, '').trim()).filter(Boolean);
+        const combined = Array.from(new Set([matchedCategory, ...cleanTags]));
+        setTags(combined.slice(0, 6));
+      } else {
+        setTags([matchedCategory]);
+      }
     } catch (error) {
       setErrors({ ai: 'Failed to generate content. You can write your question manually.' });
     } finally {
@@ -126,6 +199,7 @@ const CreatePoll: React.FC = () => {
       question: question.trim(),
       description: description.trim(),
       category,
+      tags: tags.length > 0 ? tags : [category],
       createdAt: Date.now(),
       totalVotes: 0,
       expiresAt,
@@ -254,14 +328,24 @@ const CreatePoll: React.FC = () => {
                 <Eye className="w-3.5 h-3.5" />
                 Live Voter Preview
               </span>
-              <span className="text-[11px] text-slate-400">What voters will see</span>
+              <span className="text-[11px] text-slate-400">What voters will see in the Poll List</span>
             </div>
             <div className="p-5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-600 border border-primary-200 dark:border-primary-800/50 uppercase">
                   {category}
                 </span>
-                <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                {tags
+                  .filter(t => t.toLowerCase() !== category.toLowerCase())
+                  .map((t, idx) => (
+                    <span
+                      key={idx}
+                      className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium border border-slate-200/50 dark:border-slate-700/50"
+                    >
+                      #{t}
+                    </span>
+                  ))}
+                <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1 ml-auto">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Live
                 </span>
               </div>
@@ -327,38 +411,139 @@ const CreatePoll: React.FC = () => {
             />
           </div>
 
-          {/* Category & Expiry */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-                Category
-              </label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-xl border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary-500/25 focus:border-primary-500 focus:outline-none text-sm font-medium transition-all shadow-sm cursor-pointer"
-              >
-                {Object.values(PollCategory).map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
+          {/* Interactive Tagging & Categorization System */}
+          <div className="bg-slate-50/80 dark:bg-slate-800/40 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-3 border-b border-slate-200/60 dark:border-slate-700/60">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-primary-100 dark:bg-primary-950 text-primary-600 dark:text-primary-400">
+                  <Tags className="w-4 h-4" />
+                </div>
+                <div>
+                  <label className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                    Category & Topic Tags <span className="text-red-500">*</span>
+                  </label>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Organize your poll so voters can filter by categories like Technology, Politics, or Lifestyle
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800 self-start sm:self-auto">
+                Selected: {category}
+              </span>
             </div>
 
+            {/* Category Preset Selection Pills */}
             <div>
-              <label className="block text-sm font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-                Poll Duration
-              </label>
-              <select
-                value={expiry}
-                onChange={(e) => setExpiry(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-xl border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary-500/25 focus:border-primary-500 focus:outline-none text-sm font-medium transition-all shadow-sm cursor-pointer"
-              >
-                <option value="never">No Expiration (Always Active)</option>
-                <option value="1h">1 Hour</option>
-                <option value="24h">24 Hours</option>
-                <option value="7d">7 Days</option>
-              </select>
+              <span className="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-2">
+                1. Select Primary Category:
+              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                {Object.values(PollCategory).map(cat => {
+                  const meta = getCategoryMeta(cat);
+                  const Icon = meta.icon;
+                  const isSelected = category === cat;
+
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => handleSelectCategory(cat)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-150 border cursor-pointer ${
+                        isSelected
+                          ? `${meta.activeClass} shadow-xs ring-2 ring-primary-500/25`
+                          : `${meta.badgeClass} hover:opacity-90`
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      <span>{cat}</span>
+                      {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-white ml-0.5" />}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+
+            {/* Custom Topic Tags Input */}
+            <div className="pt-3 border-t border-slate-200/60 dark:border-slate-700/60 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                  2. Specific Topic Tags ({tags.length}/6 max):
+                </span>
+                <span className="text-[11px] text-slate-400">Press Enter or comma to add tag</span>
+              </div>
+
+              {/* Active Tag Chips List */}
+              <div className="flex items-center gap-1.5 flex-wrap min-h-[38px] p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                {tags.map((t, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 animate-in fade-in"
+                  >
+                    <Tag className="w-3 h-3 opacity-60" />
+                    <span>#{t}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTag(idx)}
+                      className="hover:bg-primary-200/60 dark:hover:bg-primary-900 rounded p-0.5 ml-0.5 transition-colors cursor-pointer"
+                      title={`Remove #${t}`}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+
+                {tags.length < 6 && (
+                  <div className="flex-grow flex items-center min-w-[150px]">
+                    <input
+                      type="text"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={handleTagKeyDown}
+                      placeholder={tags.length === 0 ? "Type tag & press Enter (e.g. React, Elections)..." : "Add another tag..."}
+                      className="w-full px-2 py-1 text-xs bg-transparent text-slate-800 dark:text-white placeholder:text-slate-400 focus:outline-none"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Quick Suggested Tags based on current category */}
+              {CATEGORY_SUGGESTED_TAGS[category] && (
+                <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                  <span className="text-[11px] text-slate-400 font-medium">Suggestions for {category}:</span>
+                  {CATEGORY_SUGGESTED_TAGS[category]
+                    .filter(st => !tags.some(t => t.toLowerCase() === st.toLowerCase()))
+                    .slice(0, 5)
+                    .map((st) => (
+                      <button
+                        key={st}
+                        type="button"
+                        onClick={() => handleAddTag(st)}
+                        className="text-[11px] px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 hover:bg-primary-50 dark:hover:bg-primary-950/50 text-slate-600 dark:text-slate-300 hover:text-primary-600 border border-slate-200 dark:border-slate-700 transition-colors inline-flex items-center gap-0.5 cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3 text-slate-400" />
+                        <span>#{st}</span>
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Poll Duration */}
+          <div>
+            <label className="block text-sm font-bold text-slate-800 dark:text-slate-200 mb-1.5">
+              Poll Duration / Expiry
+            </label>
+            <select
+              value={expiry}
+              onChange={(e) => setExpiry(e.target.value)}
+              className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-xl border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary-500/25 focus:border-primary-500 focus:outline-none text-sm font-medium transition-all shadow-sm cursor-pointer"
+            >
+              <option value="never">No Expiration (Always Active)</option>
+              <option value="1h">1 Hour</option>
+              <option value="24h">24 Hours</option>
+              <option value="7d">7 Days</option>
+            </select>
           </div>
 
           {/* Voting Options */}

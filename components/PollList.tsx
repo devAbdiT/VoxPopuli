@@ -339,8 +339,30 @@ const PollList: React.FC = () => {
       if (statusFilter === 'closed' && !isExpired) return;
 
       counts['All'] = (counts['All'] || 0) + 1;
-      const cat = p.category || 'Other';
-      counts[cat] = (counts[cat] || 0) + 1;
+
+      // Track all unique categories this poll belongs to (via category and tags)
+      const pollCategories = new Set<string>();
+      if (p.category) {
+        pollCategories.add(p.category);
+      }
+      if (p.tags && Array.isArray(p.tags)) {
+        p.tags.forEach(tag => {
+          const matchedEnum = Object.values(PollCategory).find(
+            cat => cat.toLowerCase() === tag.toLowerCase() || `#${cat.toLowerCase()}` === tag.toLowerCase()
+          );
+          if (matchedEnum) {
+            pollCategories.add(matchedEnum);
+          }
+        });
+      }
+
+      if (pollCategories.size === 0) {
+        counts['Other'] = (counts['Other'] || 0) + 1;
+      } else {
+        pollCategories.forEach(cat => {
+          counts[cat] = (counts[cat] || 0) + 1;
+        });
+      }
     });
     return counts;
   }, [polls, statusFilter]);
@@ -367,11 +389,12 @@ const PollList: React.FC = () => {
     };
   }, [polls, userVotes]);
 
-  // Real-time filtering by title keyword, active poll status, category, and votes
+  // Real-time filtering by title keyword, active poll status, category tags, and votes
   const filteredPolls = useMemo(() => {
     const now = Date.now();
     const query = searchQuery.trim().toLowerCase();
     const keywords = query ? query.split(/\s+/).filter(Boolean) : [];
+    const cleanFilter = filter.replace(/^#/, '').toLowerCase();
 
     return polls.filter(p => {
       if (p.isPrivate) return false;
@@ -381,15 +404,22 @@ const PollList: React.FC = () => {
       if (statusFilter === 'active' && isExpired) return false;
       if (statusFilter === 'closed' && !isExpired) return false;
 
-      // Category filter
-      const matchesCategory = filter === 'All' || p.category === filter;
+      // Category and tag filter
+      const matchesCategory = filter === 'All' || 
+        (p.category && p.category.toLowerCase() === cleanFilter) ||
+        (p.tags && Array.isArray(p.tags) && p.tags.some(t => 
+          t.replace(/^#/, '').toLowerCase() === cleanFilter
+        ));
 
-      // Real-time title keyword matching
+      // Real-time keyword matching across title, description, category, and tags
       let matchesSearch = true;
       if (keywords.length > 0) {
         const titleLower = p.question.toLowerCase();
-        // Checks direct phrase inclusion or all keywords matching title
-        matchesSearch = titleLower.includes(query) || keywords.every(kw => titleLower.includes(kw));
+        const descLower = (p.description || '').toLowerCase();
+        const tagsString = (p.tags || []).join(' ').toLowerCase();
+        const catLower = (p.category || '').toLowerCase();
+        const fullCorpus = `${titleLower} ${descLower} ${tagsString} ${catLower}`;
+        matchesSearch = fullCorpus.includes(query) || keywords.every(kw => fullCorpus.includes(kw));
       }
 
       // Voted by me filter
@@ -703,6 +733,23 @@ const PollList: React.FC = () => {
             </span>
           </button>
 
+          {/* Active Custom Tag Pill (e.g. if user filtered by a specific hashtag like #React) */}
+          {filter !== 'All' && !Object.values(PollCategory).some(c => c.toLowerCase() === filter.replace(/^#/, '').toLowerCase()) && (
+            <button
+              type="button"
+              onClick={() => handleSelectTag('All')}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-primary-600 text-white border border-primary-600 shadow-sm shadow-primary-500/30 ring-2 ring-primary-500/25 whitespace-nowrap flex-shrink-0 cursor-pointer animate-in fade-in"
+              title="Click to clear this custom tag filter"
+            >
+              <Tag className="w-3.5 h-3.5 text-white" />
+              <span>#{filter.replace(/^#/, '')}</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-white/20 text-white">
+                {filteredPolls.length}
+              </span>
+              <X className="w-3 h-3 ml-0.5 opacity-80 hover:opacity-100" />
+            </button>
+          )}
+
           {/* Individual Category Tags */}
           {Object.values(PollCategory).map(cat => {
             const meta = getCategoryMeta(cat);
@@ -875,7 +922,7 @@ const PollList: React.FC = () => {
                         }}
                         title={`Filter by tag: ${poll.category || 'General'}`}
                         className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-semibold rounded-full border uppercase tracking-wider transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer z-10 ${
-                          filter === poll.category
+                          filter.toLowerCase() === (poll.category || '').toLowerCase()
                             ? cardCategoryMeta.activeClass
                             : cardCategoryMeta.badgeClass
                         }`}
@@ -909,9 +956,43 @@ const PollList: React.FC = () => {
                   </h2>
                   
                   {/* Description */}
-                  <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mb-4 flex-grow line-clamp-2 leading-relaxed">
+                  <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mb-3 flex-grow line-clamp-2 leading-relaxed">
                     {poll.description || "No description provided."}
                   </p>
+
+                  {/* Topic Tag Chips on Poll Card */}
+                  {poll.tags && poll.tags.length > 0 && (
+                    <div className="flex items-center gap-1.5 flex-wrap mb-3.5">
+                      {poll.tags.slice(0, 4).map((tag, tIdx) => {
+                        const cleanTag = tag.replace(/^#/, '');
+                        const isSelected = filter.toLowerCase() === cleanTag.toLowerCase();
+                        return (
+                          <button
+                            key={tIdx}
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleSelectTag(cleanTag);
+                            }}
+                            className={`inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-md transition-all cursor-pointer z-10 ${
+                              isSelected
+                                ? 'bg-primary-600 text-white font-semibold shadow-xs'
+                                : 'bg-slate-100 dark:bg-slate-800 hover:bg-primary-50 dark:hover:bg-primary-950/50 text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-300 border border-slate-200/60 dark:border-slate-700/60'
+                            }`}
+                            title={`Filter polls by #${cleanTag}`}
+                          >
+                            #{cleanTag}
+                          </button>
+                        );
+                      })}
+                      {poll.tags.length > 4 && (
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          +{poll.tags.length - 4}
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   {/* Leading Option Preview Bar (if votes exist) */}
                   {leadingOption && poll.totalVotes > 0 && (

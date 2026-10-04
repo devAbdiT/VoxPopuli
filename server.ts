@@ -47,6 +47,7 @@ async function startServer() {
       voteVelocity: 7.2,
       hourlyVotes24h: [2, 1, 0, 1, 0, 1, 2, 4, 6, 8, 9, 7, 5, 6, 8, 10, 7, 5, 4, 3, 2, 1, 2, 1],
       category: 'Technology',
+      tags: ['Technology', 'Frontend', 'React', 'WebDev'],
       comments: [],
       options: [
         { id: 'opt_1', text: 'React', votes: 85 },
@@ -65,6 +66,7 @@ async function startServer() {
       voteVelocity: 5.4,
       hourlyVotes24h: [1, 0, 1, 0, 0, 1, 3, 5, 6, 4, 5, 7, 6, 5, 4, 3, 4, 5, 3, 2, 1, 1, 1, 1],
       category: 'Politics',
+      tags: ['Politics', 'AI', 'Elections', 'Regulation'],
       comments: [],
       options: [
         { id: 'opt_p1', text: 'Yes, mandatory for all campaign media', votes: 78 },
@@ -82,6 +84,7 @@ async function startServer() {
       voteVelocity: 3.8,
       hourlyVotes24h: [0, 0, 0, 0, 1, 2, 6, 8, 7, 4, 3, 2, 2, 1, 2, 1, 2, 1, 1, 1, 0, 1, 0, 1],
       category: 'Lifestyle',
+      tags: ['Lifestyle', 'Coffee', 'Tea', 'MorningRoutine'],
       comments: [],
       options: [
         { id: 'opt_c', text: 'Coffee', votes: 50 },
@@ -98,6 +101,7 @@ async function startServer() {
       voteVelocity: 2.9,
       hourlyVotes24h: [0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 4, 3, 2, 3, 4, 3, 2, 2, 1, 1, 1, 1, 0],
       category: 'Food',
+      tags: ['Food', 'Dining', 'Pizza', 'Weekend'],
       comments: [],
       options: [
         { id: 'opt_f1', text: 'Neapolitan Pizza', votes: 28 },
@@ -155,6 +159,9 @@ async function startServer() {
       if (!newPoll.votesLast24h) newPoll.votesLast24h = 0;
       if (!newPoll.hourlyVotes24h) newPoll.hourlyVotes24h = new Array(24).fill(0);
       if (!newPoll.voteVelocity) newPoll.voteVelocity = 0;
+      if (!newPoll.tags || !Array.isArray(newPoll.tags) || newPoll.tags.length === 0) {
+        newPoll.tags = newPoll.category ? [newPoll.category] : ['General'];
+      }
       polls.unshift(newPoll); // Add to beginning
       io.emit("poll_created", newPoll);
     });

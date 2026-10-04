@@ -12,7 +12,7 @@ const createClient = () => {
 export const generatePollContent = async (topic: string): Promise<PollCreationData> => {
   const ai = createClient();
   
-  const prompt = `Generate an engaging poll question, a brief description, and 4 distinct voting options based on the topic: "${topic}". 
+  const prompt = `Generate an engaging poll question, a brief description, 4 distinct voting options, the best-matching category (from: Technology, Lifestyle, Food, Entertainment, Sports, Politics, Education, Travel, Health & Wellness, Finance, Science, Art & Culture, Other), and 3-5 relevant short topic tags (e.g. React, AI, WebDev) based on the topic: "${topic}". 
   The question should be thought-provoking. The options should cover different perspectives.`;
 
   try {
@@ -30,6 +30,12 @@ export const generatePollContent = async (topic: string): Promise<PollCreationDa
               type: Type.ARRAY,
               items: { type: Type.STRING },
               description: "A list of 4 distinct options for voting"
+            },
+            category: { type: Type.STRING, description: "The most fitting category (e.g. Technology, Politics, Lifestyle, Food)" },
+            tags: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "3 to 5 short keyword tags related to the poll"
             }
           },
           required: ["question", "description", "options"],

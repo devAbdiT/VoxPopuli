@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState, votePollEvent, deletePollEvent, addCommentEvent } from '../store';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
@@ -266,9 +266,28 @@ const PollView: React.FC = () => {
             {/* Header Tags */}
             <div className="mb-5">
               <div className="flex items-center gap-2 mb-3 flex-wrap">
-                <span className="px-3 py-0.5 text-xs font-semibold rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400 border border-primary-200/60 dark:border-primary-800/50 uppercase tracking-wider">
+                <Link
+                  to={`/?tag=${encodeURIComponent(poll.category || 'General')}`}
+                  className="px-3 py-0.5 text-xs font-semibold rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400 border border-primary-200/60 dark:border-primary-800/50 uppercase tracking-wider hover:bg-primary-100 dark:hover:bg-primary-900/60 transition-colors"
+                  title={`Filter by category: ${poll.category || 'General'}`}
+                >
                   {poll.category || 'General'}
-                </span>
+                </Link>
+
+                {poll.tags && poll.tags.filter(t => t.toLowerCase() !== (poll.category || '').toLowerCase()).map((t, idx) => {
+                  const clean = t.replace(/^#/, '');
+                  return (
+                    <Link
+                      key={idx}
+                      to={`/?tag=${encodeURIComponent(clean)}`}
+                      className="px-2.5 py-0.5 text-xs font-medium rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-slate-200/60 transition-colors"
+                      title={`Filter polls by #${clean}`}
+                    >
+                      #{clean}
+                    </Link>
+                  );
+                })}
+
                 {poll.isPrivate && (
                   <span className="px-2.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-semibold rounded-full border border-slate-200 dark:border-slate-700 uppercase tracking-wider flex items-center gap-1">
                     <Lock className="w-3 h-3" />

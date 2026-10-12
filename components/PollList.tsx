@@ -934,6 +934,31 @@ const PollList: React.FC = () => {
                         <span className="px-2.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[11px] font-semibold rounded-full border border-slate-200 dark:border-slate-700 uppercase tracking-wider">
                           Closed
                         </span>
+                      ) : poll.expiresAt ? (
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-semibold rounded-full border uppercase tracking-wider ${
+                          poll.expiresAt - Date.now() < 3600000 
+                            ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border-red-200/60 dark:border-red-800/50 animate-pulse'
+                            : poll.expiresAt - Date.now() < 86400000
+                              ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/50'
+                              : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/50'
+                        }`}>
+                          <Clock className="w-2.5 h-2.5" />
+                          <span>
+                            {(() => {
+                              const diff = poll.expiresAt - Date.now();
+                              const hours = Math.floor(diff / 3600000);
+                              const mins = Math.floor((diff % 3600000) / 60000);
+                              if (hours >= 24) {
+                                const days = Math.floor(hours / 24);
+                                return `${days}d left`;
+                              } else if (hours > 0) {
+                                return `${hours}h left`;
+                              } else {
+                                return `${Math.max(1, mins)}m left`;
+                              }
+                            })()}
+                          </span>
+                        </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold rounded-full border border-emerald-200/60 dark:border-emerald-800/50 uppercase tracking-wider">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>

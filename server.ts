@@ -30,6 +30,8 @@ async function startServer() {
       voteVelocity: 9.8,
       hourlyVotes24h: [3, 2, 1, 1, 2, 3, 4, 7, 8, 10, 12, 11, 8, 7, 9, 8, 6, 5, 4, 4, 3, 2, 1, 2],
       category: 'Technology',
+      tags: ['Technology', 'Robotics', 'AI', 'FutureTech'],
+      expiresAt: Date.now() + (3 * 24 * 60 * 60 * 1000) + (4 * 60 * 60 * 1000), // 3 days 4h from now
       comments: [],
       options: [
         { id: 'opt_r1', text: 'Yes, personal robotics are imminent', votes: 56 },
@@ -41,13 +43,14 @@ async function startServer() {
       id: '1',
       question: 'What is your favorite frontend framework?',
       description: 'Help us decide which framework rules the web in 2024.',
-      createdAt: Date.now(),
+      createdAt: Date.now() - 3600000,
       totalVotes: 150,
       votesLast24h: 94,
       voteVelocity: 7.2,
       hourlyVotes24h: [2, 1, 0, 1, 0, 1, 2, 4, 6, 8, 9, 7, 5, 6, 8, 10, 7, 5, 4, 3, 2, 1, 2, 1],
       category: 'Technology',
       tags: ['Technology', 'Frontend', 'React', 'WebDev'],
+      expiresAt: Date.now() + (26 * 60 * 60 * 1000) + (15 * 60 * 1000), // ~26 hours from now
       comments: [],
       options: [
         { id: 'opt_1', text: 'React', votes: 85 },
@@ -67,6 +70,7 @@ async function startServer() {
       hourlyVotes24h: [1, 0, 1, 0, 0, 1, 3, 5, 6, 4, 5, 7, 6, 5, 4, 3, 4, 5, 3, 2, 1, 1, 1, 1],
       category: 'Politics',
       tags: ['Politics', 'AI', 'Elections', 'Regulation'],
+      expiresAt: Date.now() + (45 * 60 * 1000) + (30 * 1000), // Closing soon: ~45 mins from now
       comments: [],
       options: [
         { id: 'opt_p1', text: 'Yes, mandatory for all campaign media', votes: 78 },
@@ -95,13 +99,14 @@ async function startServer() {
       id: '4',
       question: 'Best cuisine for a Friday night gathering?',
       description: 'Vote on the ultimate crowd-pleaser for dinner with friends.',
-      createdAt: Date.now() - 300000,
+      createdAt: Date.now() - 86400000,
       totalVotes: 64,
       votesLast24h: 36,
       voteVelocity: 2.9,
       hourlyVotes24h: [0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 4, 3, 2, 3, 4, 3, 2, 2, 1, 1, 1, 1, 0],
       category: 'Food',
       tags: ['Food', 'Dining', 'Pizza', 'Weekend'],
+      expiresAt: Date.now() - (2 * 60 * 60 * 1000), // Closed 2h ago
       comments: [],
       options: [
         { id: 'opt_f1', text: 'Neapolitan Pizza', votes: 28 },
